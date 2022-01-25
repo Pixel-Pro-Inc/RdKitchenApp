@@ -33,7 +33,12 @@ namespace RdKitchenApp.Helpers
 
             client = new FireSharp.FirebaseClient(config);
 
-            string branchId = "rd29502";
+            StartFunction();
+                   
+        }
+        public void StartFunction()
+        {
+            string branchId = (new SerializedObjectManager().RetrieveData("BranchId")).ToString();
 
             Device.StartTimer(TimeSpan.FromSeconds(1), () =>
             {
@@ -42,7 +47,7 @@ namespace RdKitchenApp.Helpers
                 return true;
             });
 
-            GetDataChanging("Order/" + branchId);            
+            GetDataChanging("Order/" + branchId);
         }
         float elapsedTime = 0;
         bool startCounting = false;
@@ -69,15 +74,15 @@ namespace RdKitchenApp.Helpers
             EventStreamResponse response = await client.OnAsync(fullPath,
                 (sender, args, context) =>
                 {
-                    DataReceived("add");
+                    DataReceived();
                 },
                 (sender, args, context) =>
                 {
-                    DataReceived("add");
+                    DataReceived();
                 });
         }
 
-        void DataReceived(string source)
+        void DataReceived()
         {
             startCounting = true;
             elapsedTime = 0;
