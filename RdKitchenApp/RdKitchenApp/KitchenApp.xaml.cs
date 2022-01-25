@@ -37,6 +37,8 @@ namespace RdKitchenApp
 
             List<List<OrderItem>> orders = await GetOrderItems();
 
+            orders = Formatting.ChronologicalOrderList(orders);
+
             _orders = orders;
 
             bool skip = false;
@@ -112,6 +114,8 @@ namespace RdKitchenApp
             List<List<OrderItem>> orders = new List<List<OrderItem>>();
 
             orders = await FirebaseDataContext.Instance.GetOrders();
+
+            orders = orders.Where(o => o.Where(p => p.Fufilled).ToList().Count != o.Count).ToList();
 
             return orders;
         }
@@ -216,7 +220,7 @@ namespace RdKitchenApp
                     VerticalTextAlignment = TextAlignment.Center,
                     HorizontalTextAlignment = TextAlignment.Center,
                     TextColor = Color.White,
-                    Text = order[i].Weight
+                    Text = order[i].Category == "Meat"? Formatting.FormatAmountString(float.Parse(order[i].Weight.Replace("grams", ""))) + " grams": "-"
                 };
 
                 stackLayout4.Children.Add(label4);
@@ -313,7 +317,7 @@ namespace RdKitchenApp
                 return;
             }
                 
-            await client.PostAsync("https://rodizioexpress.azurewebsites.net/api/sms/send/" + phoneNumber + "/" + orderNumber, null);//Switch to final domain name            
+            await client.PostAsync("https://rodizioexpress.azurewebsites.net/api/sms/send/complete/" + phoneNumber + "/" + orderNumber, null);//Switch to final domain name            
         }
 
         private void View_Clicked(object sender, EventArgs e)

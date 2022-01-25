@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RdKitchenApp.Helpers;
+using System;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 
@@ -23,6 +24,7 @@ namespace RdKitchenApp
 
         protected override void OnResume()
         {
+            FirebaseDataContext.Instance.StartFunction();
         }
     }
 }
