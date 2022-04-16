@@ -40,16 +40,9 @@ namespace RdKitchenApp
         {
             await Task.Delay(5000);// This give the page a chance for the page to show up instead of stealing resources
 
-            Console.WriteLine("We attempting to connect to the server");
-
-
             await TCPClient.CreateClient();
 
-            Console.WriteLine("We hit the reconnectingpop up and connected to the server, now we are trying to see if the orderview updates");
 
-            //I'm thinking this where the UpdateOrderView is called  because it has reconnected to the server
-            KitchenApp.Instance.UpdateOrderView();
-            
 
             /*
              So when we have this tablet open, we have to find a way to simulate it disconnecting.
@@ -80,15 +73,22 @@ namespace RdKitchenApp
             block = 0;
         }
 
+        //This is the only place where we know it will be connected. Everywhere else it hasn't.
         public void Connected()
         {
             try
             {
                 TCPClient.reconnectingPopup = null;
                 PopupNavigation.PopAsync(true);
+
+                //This basically makes sure that everytime you reconnect to the server you have to login. 
+                //This is a good solution cause everytime you login it clears and retakes all the orders from the Computer Client
+                KitchenApp.Instance.LoginPage();
+
             }
             catch
             {
+                Console.WriteLine("If it gets to this point that means we don't know why its hasn't connected");
                 return;
             }
         }

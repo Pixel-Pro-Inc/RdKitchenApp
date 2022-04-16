@@ -41,7 +41,7 @@
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <AndroidUseAapt2>true</AndroidUseAapt2>
     <AndroidCreatePackagePerAbi>false</AndroidCreatePackagePerAbi>
-    <AndroidKeyStore>true</AndroidKeyStore>
+    <AndroidKeyStore>false</AndroidKeyStore>
     <AndroidSigningKeyStore>C:\Users\pixel\AppData\Local\Xamarin\Mono for Android\Keystore\yewo\yewo.keystore</AndroidSigningKeyStore>
     <AndroidSigningStorePass>Domain47</AndroidSigningStorePass>
     <AndroidSigningKeyAlias>yewo</AndroidSigningKeyAlias>

@@ -60,13 +60,16 @@ namespace RdKitchenApp.Helpers
 
             client = new SimpleTcpClient(ip + ":2000");
             client.Events.DataReceived += Events_DataReceived;
+            //Im not sure what this does
             client.Events.Disconnected += Events_Disconnected;
 
             client.Connect();
 
+            //Basically checking if we are connecting for the first time or not
+            //If first time
             if (reconnectingPopup == null)
                 serverConnectPage.Connected();
-
+            //If reconnecting
             if (reconnectingPopup != null)
                 reconnectingPopup.Connected();
 

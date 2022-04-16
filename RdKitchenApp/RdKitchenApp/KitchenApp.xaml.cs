@@ -90,89 +90,92 @@ namespace RdKitchenApp
             List<List<OrderItem>> orders = await GetOrderItems();//Call For Orders From Server
 
             _orders = orders;
-
+            #region collapse
             /*if (orders.Where(o => !orderNumbers.Contains(o[0].OrderNumber)).Count() > 0)//If new items exist add to bottom of list
+{
+    //Add new items to bottom of list
+    foreach (var order in orders)
+    {
+        if (!orderNumbers.Contains(order[0].OrderNumber))
+        {
+            orderNumbers.Add(order[0].OrderNumber);
+
+            _orders.Add(order);
+
+            orderViewer.Children.Add(GetFrame(order, orderViewer.Children.Count));
+        }
+    }
+
+    if (processingPopUp != null)
+        processingPopUp.Close();
+
+    return;
+}
+
+//Refresh whole view with edited order items
+
+//Fully Fufilled
+List<string> newOrderNumbers = GetOrderNumbers(orders);//List of OrderNumbers From Server
+
+//Bindings need to be updated after
+foreach (var orderNumber in orderNumbers)
+{
+    if (!newOrderNumbers.Contains(orderNumber))
+    {
+        //Has been fully fufilled thus absent from list
+        int count_1 = 0;
+        foreach (var item in _orders)
+        {
+            if(item[0].OrderNumber == orderNumber)
             {
-                //Add new items to bottom of list
-                foreach (var order in orders)
-                {
-                    if (!orderNumbers.Contains(order[0].OrderNumber))
-                    {
-                        orderNumbers.Add(order[0].OrderNumber);
-
-                        _orders.Add(order);
-
-                        orderViewer.Children.Add(GetFrame(order, orderViewer.Children.Count));
-                    }
-                }
-
-                if (processingPopUp != null)
-                    processingPopUp.Close();
-
-                return;
+                //Remove from viewer
+                orderViewer.Children.RemoveAt(count_1);
+                ResetBindings();
             }
 
-            //Refresh whole view with edited order items
-            
-            //Fully Fufilled
-            List<string> newOrderNumbers = GetOrderNumbers(orders);//List of OrderNumbers From Server
+            count_1++;
+        }
+    }
+}
 
-            //Bindings need to be updated after
-            foreach (var orderNumber in orderNumbers)
-            {
-                if (!newOrderNumbers.Contains(orderNumber))
-                {
-                    //Has been fully fufilled thus absent from list
-                    int count_1 = 0;
-                    foreach (var item in _orders)
-                    {
-                        if(item[0].OrderNumber == orderNumber)
-                        {
-                            //Remove from viewer
-                            orderViewer.Children.RemoveAt(count_1);
-                            ResetBindings();
-                        }
+_orders = orders;//Set Local to Server Orders
 
-                        count_1++;
-                    }
-                }
-            }
+/*int count = 0;
+foreach (var order in orderViewer.Children)
+{
+    //Partially Fufilled
+    Frame frame = ((Frame)order);
+    StackLayout stackLayout = (StackLayout)frame.Content;
 
-            _orders = orders;//Set Local to Server Orders
+    //Get Label with Order Number String
+    StackLayout labelHouser = (StackLayout)stackLayout.Children[0];
+    Label label = (Label)labelHouser.Children[0];
+    string _OrderNumber = label.Text;
 
-            /*int count = 0;
-            foreach (var order in orderViewer.Children)
-            {
-                //Partially Fufilled
-                Frame frame = ((Frame)order);
-                StackLayout stackLayout = (StackLayout)frame.Content;
+    //Extract Last 4 indexes to get Order Number (e.g 4999)
+    _OrderNumber = _OrderNumber.Substring(_OrderNumber.Length - 4, 4);
 
-                //Get Label with Order Number String
-                StackLayout labelHouser = (StackLayout)stackLayout.Children[0];
-                Label label = (Label)labelHouser.Children[0];
-                string _OrderNumber = label.Text;
+    StackLayout stackLayout_1 = (StackLayout)stackLayout.Children[1];
 
-                //Extract Last 4 indexes to get Order Number (e.g 4999)
-                _OrderNumber = _OrderNumber.Substring(_OrderNumber.Length - 4, 4);
+    StackLayout stackLayout_2 = (StackLayout)stackLayout_1.Children[3];//Status Holder
 
-                StackLayout stackLayout_1 = (StackLayout)stackLayout.Children[1];
+    int count_1 = 1;
+    foreach (var item in _orders)
+    {
+        if (item[0].OrderNumber.Substring(item[0].OrderNumber.IndexOf('_') + 1, 4) == _OrderNumber)
+        {
+            var checkBox = (CheckBox)(stackLayout_2.Children[count_1]);
+            checkBox.IsChecked = item[count_1 - 1].Fufilled;
 
-                StackLayout stackLayout_2 = (StackLayout)stackLayout_1.Children[3];//Status Holder
+            count_1++;
+        }
+    }
 
-                int count_1 = 1;
-                foreach (var item in _orders)
-                {
-                    if (item[0].OrderNumber.Substring(item[0].OrderNumber.IndexOf('_') + 1, 4) == _OrderNumber)
-                    {
-                        var checkBox = (CheckBox)(stackLayout_2.Children[count_1]);
-                        checkBox.IsChecked = item[count_1 - 1].Fufilled;
+    count++;
+}*/
+            #endregion
 
-                        count_1++;
-                    }
-                }
 
-                count++;
-            }*/
 
             if (processingPopUp != null)
                 processingPopUp.Close();
@@ -535,6 +538,11 @@ namespace RdKitchenApp
 
             //Next Page
             //Application.Current.MainPage = new Login();
+            LoginPage();
+        }
+
+        public async void LoginPage()
+        {
             await Navigation.PushAsync(new Login());//Resets back to login page
         }
     }

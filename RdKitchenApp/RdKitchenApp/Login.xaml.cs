@@ -113,6 +113,12 @@ namespace RdKitchenApp
 
             //Next Page
             //Application.Current.MainPage = new KitchenApp();
+            //Makes a new kitchen app page
+            NewKitchenPage();
+        }
+
+        public async void NewKitchenPage()
+        {
             await Navigation.PushAsync(new KitchenApp());
         }
 
