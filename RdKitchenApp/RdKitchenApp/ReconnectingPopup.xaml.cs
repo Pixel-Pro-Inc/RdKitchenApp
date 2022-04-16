@@ -23,7 +23,7 @@ namespace RdKitchenApp
 
             ShowPage();
 
-            StartUp();
+            StartUp();// Basically tries to connect to the server
         }
 
         async void ShowPage()
@@ -38,9 +38,33 @@ namespace RdKitchenApp
 
         public async Task ConnectToServer()
         {
-            await Task.Delay(5000);
+            await Task.Delay(5000);// This give the page a chance for the page to show up instead of stealing resources
+
+            Console.WriteLine("We attempting to connect to the server");
+
 
             await TCPClient.CreateClient();
+
+            Console.WriteLine("We hit the reconnectingpop up and connected to the server, now we are trying to see if the orderview updates");
+
+            //I'm thinking this where the UpdateOrderView is called  because it has reconnected to the server
+            KitchenApp.Instance.UpdateOrderView();
+            
+
+            /*
+             So when we have this tablet open, we have to find a way to simulate it disconnecting.
+            then 
+            We need it to hit this break point.
+            If that's succesful then it will attempt to updateOrderView
+            If thats successful it has to get the new order we have so.......
+
+            Connect to the server.
+            Disconnect.
+            Add an order
+            reconnect
+            Check if it reflects
+             */
+
         }
         int block_1 = 0; 
         public void DisplayMessageAlert()

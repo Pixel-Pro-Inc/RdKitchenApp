@@ -19,6 +19,7 @@ namespace RdKitchenApp
             StartUp();
         }
 
+        //This prolly exists in case he wants to add more stuff to the start up protocol
         async void StartUp()
         {
             await ConnectToServer();

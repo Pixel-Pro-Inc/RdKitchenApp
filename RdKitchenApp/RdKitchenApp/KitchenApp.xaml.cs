@@ -32,6 +32,7 @@ namespace RdKitchenApp
             UpdateOrderView(); //Display All Eligible Orders On Start
         }
         
+        //This basically gets the orders. We need this called when we reconnect to the server.  When does it get disconnected?
         public async void UpdateOrderView(bool newOrders = false)
         {
             orderViewer.Children.Clear();
