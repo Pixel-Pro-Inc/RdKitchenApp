@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<pages:PopupPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:animations="clr-namespace:Rg.Plugins.Popup.Animations;assembly=Rg.Plugins.Popup"
+             xmlns:pages="clr-namespace:Rg.Plugins.Popup.Pages;assembly=Rg.Plugins.Popup"
+             x:Class="RdKitchenApp.ProcessingPopUp">
+    <pages:PopupPage.Animation>
+        <animations:ScaleAnimation DurationIn="400"
+                                   DurationOut="300"
+                                   EasingIn="SinOut"
+                                   EasingOut="SinIn"
+                                   HasBackgroundAnimation="True"
+                                   PositionIn="Center"
+                                   PositionOut="Center"
+                                   ScaleIn="1.2"
+                                   ScaleOut="0.8" />
+    </pages:PopupPage.Animation>
+    <Frame BackgroundColor="#292929" 
+           WidthRequest="400"
+           CornerRadius="10" 
+           HorizontalOptions="Center" 
+           VerticalOptions="Center">
+        <StackLayout Orientation="Horizontal">
+            <ActivityIndicator IsRunning="True">                
+            </ActivityIndicator>
+            <Label TextColor="White"  VerticalOptions="Center">Processing your request...</Label>
+        </StackLayout>
+    </Frame>
+</pages:PopupPage>

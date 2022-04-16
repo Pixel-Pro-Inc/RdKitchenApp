@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="RdKitchenApp.Login">
+    <ContentPage.Content>
+        <StackLayout BackgroundColor="#434343">
+            <Grid>
+                <StackLayout>
+                    <Frame BackgroundColor="Red"
+                   Margin="0,10"
+                   HorizontalOptions="Center"
+                   CornerRadius="50"
+                   HasShadow="True">
+                        <StackLayout Orientation="Horizontal">
+                            <Image Source="icon_transparent.png" WidthRequest="40"></Image>
+                            <Label Text="Welcome to the Rodizio Express Kitchen Terminal"
+                       FontSize="Title"
+                       TextColor="White"     
+                       FontAttributes="Bold"
+                       VerticalOptions="StartAndExpand"
+                       HorizontalOptions="Center" />
+                        </StackLayout>
+                    </Frame>
+
+                    <Frame BackgroundColor="White"
+                   HorizontalOptions="Center"
+                   Margin="0,15"
+                   CornerRadius="30"
+                   HasShadow="True"
+                   WidthRequest="235"
+                   HeightRequest="250">
+                        <StackLayout>
+                            <Label TextColor="Black"
+                           FontSize="Large"
+                           HorizontalOptions="Center"
+                           >Please Sign In</Label>
+                            <Entry BackgroundColor="#c2f2f2" TextColor="Black" PlaceholderColor="#292929" Margin="0,10" Placeholder="Username" TextChanged="Username_Entry_TextChanged"/>
+
+                            <Entry BackgroundColor="#c2f2f2" TextColor="Black" PlaceholderColor="#292929" Placeholder="********" TextChanged="Password_Entry_TextChanged" IsPassword="True"/>
+
+                            <Button Text="Sign In"
+                            BackgroundColor="Red"
+                            TextColor="White"
+                            FontAttributes="Bold"
+                            Margin="0,10"
+                            Clicked="Signin_Button_Clicked"/>
+                        </StackLayout>
+                    </Frame>
+                </StackLayout>
+                <Frame BackgroundColor="#292929"
+                       IsVisible="false"
+                       x:Name="activity">
+                    <ActivityIndicator IsRunning="True"/>
+                </Frame>
+            </Grid>            
+        </StackLayout>
+    </ContentPage.Content>
+</ContentPage>

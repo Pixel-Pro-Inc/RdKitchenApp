@@ -1,5 +1,7 @@
 ﻿using RdKitchenApp.Helpers;
 using System;
+using System.Globalization;
+using System.Threading;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 
@@ -10,6 +12,7 @@ namespace RdKitchenApp
         public App()
         {
             InitializeComponent();
+            CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("en-US");
 
             MainPage = new SplashScreen();
         }
@@ -24,7 +27,7 @@ namespace RdKitchenApp
 
         protected override void OnResume()
         {
-            FirebaseDataContext.Instance.StartFunction();
+            DataContext.Instance.StartFunction();
         }
     }
 }

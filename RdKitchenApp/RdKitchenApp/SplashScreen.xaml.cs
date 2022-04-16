@@ -16,8 +16,7 @@ namespace RdKitchenApp
         public SplashScreen()
         {
             InitializeComponent();
-
-            FirebaseDataContext.Instance = new FirebaseDataContext();
+            
             Splash();
         }
         public async void Splash()
@@ -33,7 +32,9 @@ namespace RdKitchenApp
                 return;
             }
 
-            Application.Current.MainPage = new KitchenApp();
+            //Config
+            DataContext.Instance = new DataContext();
+            Application.Current.MainPage = new ServerConnect();
         }
     }
 }

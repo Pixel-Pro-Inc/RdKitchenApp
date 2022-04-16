@@ -22,9 +22,11 @@ namespace RdKitchenApp.Entities
         public int Quantity { get; set; }
         public string OrderNumber { get; set; }
         public bool Collected { get; set; }
+        public bool MarkedForDeletion { get; set; } = false;
         public string PhoneNumber { get; set; }
         public DateTime OrderDateTime { get; set; }
         public string User { get; set; }
+        public List<string> Chefs { get; set; }
         public int PrepTime { get; set; }
     }
 }

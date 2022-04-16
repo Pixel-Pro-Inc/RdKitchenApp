@@ -7,7 +7,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RdKitchenApp.Android", "RdK
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RdKitchenApp.iOS", "RdKitchenApp\RdKitchenApp.iOS\RdKitchenApp.iOS.csproj", "{56A8D010-0DAA-4F52-90E0-A23EE7698EC0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RdKitchenApp", "RdKitchenApp\RdKitchenApp\RdKitchenApp.csproj", "{7EE6547E-C474-4D32-8C32-9E4478216D9F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RdKitchenApp", "RdKitchenApp\RdKitchenApp\RdKitchenApp.csproj", "{7EE6547E-C474-4D32-8C32-9E4478216D9F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{984218AC-4F51-4B50-96D0-C3A4AA809259}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

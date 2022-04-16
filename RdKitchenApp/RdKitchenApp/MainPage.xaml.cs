@@ -25,7 +25,8 @@ namespace RdKitchenApp
             {
                 new SerializedObjectManager().SaveData("rd" + id, "BranchId");
 
-                Application.Current.MainPage = new KitchenApp();
+                DataContext.Instance = new DataContext();
+                Application.Current.MainPage = new ServerConnect();
 
                 return;
             }

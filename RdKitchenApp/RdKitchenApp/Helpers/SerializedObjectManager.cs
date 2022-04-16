@@ -18,10 +18,11 @@ namespace RdKitchenApp.Helpers
             var save = serializedData;
 
             var binaryFormatter = new BinaryFormatter();
-            using (var fileStream = File.Create(savePath(path)))
-            {
-                binaryFormatter.Serialize(fileStream, save);
-            }
+            var fileStream = File.Create(savePath(path));
+            binaryFormatter.Serialize(fileStream, save);
+            fileStream.Dispose();
+
+            File.SetAttributes(savePath(path), FileAttributes.Normal);
         }
         public object RetrieveData(string path)
         {
@@ -30,12 +31,12 @@ namespace RdKitchenApp.Helpers
             if (File.Exists(savePath(path)))
             {
                 var binaryFormatter = new BinaryFormatter();
-                using (var fileStream = File.Open(savePath(path), FileMode.Open))
-                {
-                    load = (object)binaryFormatter.Deserialize(fileStream);
+                var fileStream = File.Open(savePath(path), FileMode.Open);
 
-                    return load;
-                }
+                load = (object)binaryFormatter.Deserialize(fileStream);
+
+                fileStream.Dispose();
+                return load;
             }
 
             return null;

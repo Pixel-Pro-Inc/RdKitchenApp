@@ -6,7 +6,10 @@
         <Grid>
             <StackLayout BackgroundColor="#292929">
                 <Frame BackgroundColor="OrangeRed" HasShadow="True">
-                    <Label FontSize="Large" TextColor="White" FontAttributes="Bold">Kitchen</Label>
+                    <StackLayout Orientation="Horizontal">
+                        <Label FontSize="Title" TextColor="White" FontAttributes="Bold">Kitchen</Label>
+                        <Button HorizontalOptions="EndAndExpand" Clicked="Logout_Button_Clicked" Text="Logout"/>
+                    </StackLayout>                    
                 </Frame>
 
                 <Label FontSize="Large" TextColor="White" Margin="10,0,0,0">Active Orders</Label>
@@ -20,7 +23,7 @@
 
             <Label x:Name="message" VerticalOptions="Center" HorizontalOptions="Center" TextColor="White" FontSize="Large">No active orders right now</Label>
 
-            <Frame x:Name="activityIndicator" BackgroundColor="Black" Opacity="0.75">
+            <Frame IsVisible="False" x:Name="activityIndicator" BackgroundColor="Black" Opacity="0.75">
                 <ActivityIndicator IsRunning="True"></ActivityIndicator>
             </Frame>            
         </Grid>        

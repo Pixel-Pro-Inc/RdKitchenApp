@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="RdKitchenApp.ServerConnect">
+    <ContentPage.Content>
+        <Grid VerticalOptions="FillAndExpand">
+            <Frame VerticalOptions="FillAndExpand" x:Name="activityIndicator" BackgroundColor="#292929">
+                <StackLayout VerticalOptions="FillAndExpand">
+                    <ActivityIndicator VerticalOptions="FillAndExpand" IsRunning="True"></ActivityIndicator>
+                    <Label Margin="0,20,0,0" HorizontalOptions="Center" HorizontalTextAlignment="Center" TextColor="White">Connecting to local area server</Label>
+                </StackLayout>                
+            </Frame>
+        </Grid>
+    </ContentPage.Content>
+</ContentPage>
