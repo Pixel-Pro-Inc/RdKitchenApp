@@ -286,7 +286,7 @@ namespace RdKitchenApp
             #region Item
             StackLayout stackLayout3 = new StackLayout()
             {
-                Margin = new Thickness(10,0,60,0)
+                Margin = new Thickness(10,0,10,0)
             };
 
             Label label1 = new Label()
@@ -316,7 +316,7 @@ namespace RdKitchenApp
             #region Quantity
             StackLayout stackLayout3_1 = new StackLayout()
             {
-                Margin = new Thickness(10, 0, 60, 0)
+                Margin = new Thickness(10, 0, 10, 0)
             };
 
             Label label1_1 = new Label()
@@ -347,7 +347,7 @@ namespace RdKitchenApp
             #region Weight
             StackLayout stackLayout4 = new StackLayout()
             {
-                Margin = new Thickness(0, 0, 60, 0)
+                Margin = new Thickness(0, 0, 10, 0)
             };
 
             Label label3 = new Label()
@@ -394,6 +394,174 @@ namespace RdKitchenApp
             }
             #endregion
 
+            #region Flavour
+            StackLayout stackLayout4_1 = new StackLayout()
+            {
+                Margin = new Thickness(0, 0, 10, 0)
+            };
+
+            Label label3_1 = new Label()
+            {
+                TextColor = Color.White,
+                FontSize = Device.GetNamedSize(NamedSize.Medium, typeof(Label)),
+                FontAttributes = FontAttributes.Bold,
+                HorizontalTextAlignment = TextAlignment.Center,
+                Text = "Flavour"
+            };
+
+            stackLayout4_1.Children.Add(label3_1);
+
+            for (int i = 0; i < order.Count; i++)
+            {
+
+                var orderItem = order[i];
+
+                Label label4_1 = new Label()
+                {
+                    HeightRequest = 30,
+                    VerticalTextAlignment = TextAlignment.Center,
+                    HorizontalTextAlignment = TextAlignment.Center,
+                    TextColor = Color.White
+                };
+
+                bool condition = true;
+
+                if (orderItem.SubCategory != "Chicken" && orderItem.SubCategory != "Platter")
+                    condition = false;
+
+                string name = orderItem.Name.ToLower();
+
+                if (orderItem.SubCategory == "Platter" && !name.Contains("chicken"))
+                    condition = false;
+
+                if (condition)
+                {
+                    string flavour = order[i].Flavour;
+
+                    label4_1.Text = flavour;
+                }
+                else
+                {
+                    label4_1.Text = "None";
+                }
+
+
+                stackLayout4_1.Children.Add(label4_1);
+            }
+            #endregion
+
+            #region MeatTemp
+            StackLayout stackLayout4_2 = new StackLayout()
+            {
+                Margin = new Thickness(0, 0, 10, 0)
+            };
+
+            Label label3_2 = new Label()
+            {
+                TextColor = Color.White,
+                FontSize = Device.GetNamedSize(NamedSize.Medium, typeof(Label)),
+                FontAttributes = FontAttributes.Bold,
+                HorizontalTextAlignment = TextAlignment.Center,
+                Text = "Readiness"
+            };
+
+            stackLayout4_2.Children.Add(label3_2);
+
+            for (int i = 0; i < order.Count; i++)
+            {
+                Label label4_2 = new Label()
+                {
+                    HeightRequest = 30,
+                    VerticalTextAlignment = TextAlignment.Center,
+                    HorizontalTextAlignment = TextAlignment.Center,
+                    TextColor = Color.White
+                };
+
+                var orderItem = order[i];
+
+                bool condition = true;
+
+                if (orderItem.SubCategory != "Steak")
+                    condition = false;
+
+                if (condition)
+                {
+                    string meatTemperature = order[i].MeatTemperature;
+
+                    label4_2.Text = meatTemperature;
+                }
+                else
+                {
+                    label4_2.Text = "-";
+                }
+
+
+                stackLayout4_2.Children.Add(label4_2);
+            }
+            #endregion
+
+            #region Sauce
+            StackLayout stackLayout4_3 = new StackLayout()
+            {
+                Margin = new Thickness(0, 0, 10, 0)
+            };
+
+            Label label3_3 = new Label()
+            {
+                TextColor = Color.White,
+                FontSize = Device.GetNamedSize(NamedSize.Medium, typeof(Label)),
+                FontAttributes = FontAttributes.Bold,
+                HorizontalTextAlignment = TextAlignment.Center,
+                Text = "Sauces"
+            };
+
+            stackLayout4_3.Children.Add(label3_3);
+
+            for (int i = 0; i < order.Count; i++)
+            {
+                Label label4_3 = new Label()
+                {
+                    HeightRequest = 30,
+                    VerticalTextAlignment = TextAlignment.Center,
+                    HorizontalTextAlignment = TextAlignment.Center,
+                    TextColor = Color.White
+                };
+
+                string sauces = "";
+                if(order[i].Sauces != null)
+                {
+                    foreach (var item in order[i].Sauces)
+                    {
+                        if (order[i].Sauces.IndexOf(item) == 0)
+                            sauces += item;
+
+                        if (order[i].Sauces.IndexOf(item) != 0)
+                            sauces += ", " + item;
+                    }
+                }
+
+                var orderItem = order[i];
+
+                bool condition = true;
+
+                if (orderItem.Category != "Meat")
+                    condition = false;
+
+                if (condition)
+                {
+                    string sauce = sauces;
+
+                    label4_3.Text = sauce;
+                }
+                else
+                {
+                    label4_3.Text = "-";
+                }
+
+                stackLayout4_3.Children.Add(label4_3);
+            }
+            #endregion
+
             #region Status
             StackLayout stackLayout5 = new StackLayout();
 
@@ -426,6 +594,9 @@ namespace RdKitchenApp
             stackLayout2.Children.Add(stackLayout3);
             stackLayout2.Children.Add(stackLayout3_1);
             stackLayout2.Children.Add(stackLayout4);
+            stackLayout2.Children.Add(stackLayout4_1);
+            stackLayout2.Children.Add(stackLayout4_2);
+            stackLayout2.Children.Add(stackLayout4_3);
             stackLayout2.Children.Add(stackLayout5);
 
             stackLayout.Children.Add(stackLayout1);

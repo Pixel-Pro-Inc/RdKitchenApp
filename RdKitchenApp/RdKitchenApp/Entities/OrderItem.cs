@@ -28,5 +28,10 @@ namespace RdKitchenApp.Entities
         public string User { get; set; }
         public List<string> Chefs { get; set; }
         public int PrepTime { get; set; }
+        //New Additions
+        public string Flavour { get; set; }
+        public string MeatTemperature { get; set; }
+        public List<string> Sauces { get; set; } = new List<string>();
+        public string SubCategory { get; set; }
     }
 }
