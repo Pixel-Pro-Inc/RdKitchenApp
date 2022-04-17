@@ -26,7 +26,7 @@ namespace RdKitchenApp.Helpers
 
             try
             {
-                client.ConnectWithRetries(200);
+                client.ConnectWithRetries(400);
             }
             catch
             {
@@ -249,7 +249,14 @@ namespace RdKitchenApp.Helpers
                 startCounting = false;
                 elapsedTime = 0;
 
-                KitchenApp.Instance.DatabaseChangeListenerUpdate();
+                try
+                {
+                    KitchenApp.Instance.DatabaseChangeListenerUpdate();
+                }
+                catch
+                {
+                    return;
+                }                
             }
         }
         private static float elapsedTime = 0;

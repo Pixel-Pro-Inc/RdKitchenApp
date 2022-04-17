@@ -130,7 +130,6 @@
   <ItemGroup>
     <AndroidResource Include="Resources\drawable\icon_transparent.png" />
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
     <AndroidResource Include="Resources\Raw\notification.wav" />
   </ItemGroup>
