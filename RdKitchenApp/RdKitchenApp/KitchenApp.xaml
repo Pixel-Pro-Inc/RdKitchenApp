@@ -8,6 +8,7 @@
                 <Frame BackgroundColor="OrangeRed" HasShadow="True">
                     <StackLayout Orientation="Horizontal">
                         <Label FontSize="Title" TextColor="White" FontAttributes="Bold">Kitchen</Label>
+                        <Label x:Name="versionText" Margin="20,0,0,0" TextColor="White">Version: </Label>
                         <Button HorizontalOptions="EndAndExpand" Clicked="Logout_Button_Clicked" Text="Logout"/>
                     </StackLayout>                    
                 </Frame>

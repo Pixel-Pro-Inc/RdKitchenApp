@@ -101,7 +101,11 @@ namespace RdKitchenApp.Helpers
 
                 deserializeAs = new List<List<OrderItem>>();
 
-                client.Send(requestObject.ToByteArray<RequestObject>());
+                byte[] request = requestObject.ToByteArray<RequestObject>();
+
+                string requestString = "[" + Convert.ToBase64String(request);
+
+                client.Send(requestString);
 
                 if (requestMethod != RequestObject.requestMethod.Get)
                     return new List<List<OrderItem>>();                
@@ -111,7 +115,7 @@ namespace RdKitchenApp.Helpers
 
                 while (awaitresponse == null)
                 {
-                    await Task.Delay(2500);
+                    await Task.Delay(25);
                 }
 
                 return (List<List<OrderItem>>)awaitresponse;
@@ -135,7 +139,11 @@ namespace RdKitchenApp.Helpers
 
                 deserializeAs = new List<AppUser>();
 
-                client.Send(requestObject.ToByteArray<RequestObject>());
+                byte[] request = requestObject.ToByteArray<RequestObject>();
+
+                string requestString = "[" + Convert.ToBase64String(request);
+
+                client.Send(requestString);
 
                 if (requestMethod != RequestObject.requestMethod.Get)
                     return new List<AppUser>();
@@ -145,7 +153,7 @@ namespace RdKitchenApp.Helpers
 
                 while (awaitresponse == null)
                 {
-                    await Task.Delay(2500);
+                    await Task.Delay(25);
                 }
 
                 return (List<AppUser>)awaitresponse;
@@ -156,7 +164,7 @@ namespace RdKitchenApp.Helpers
             return null;
         }
         static int numRetries = 10;
-        static int delaySeconds = 2;
+        static int delaySeconds = 1;//Was 2
 
         static bool processingRequest;
         private static async void Events_DataReceived(object sender, DataReceivedEventArgs e)
@@ -174,7 +182,7 @@ namespace RdKitchenApp.Helpers
                         return;
                     }
 
-                    await Task.Delay(delaySeconds * 1000);
+                    await Task.Delay(delaySeconds * 500);//Was 1000
                 }                
             }
 
@@ -192,7 +200,7 @@ namespace RdKitchenApp.Helpers
                     break;
                 }
 
-                await Task.Delay(delaySeconds * 1000);
+                await Task.Delay(delaySeconds * 500);//Was 1000
             }            
         }
         private static void Action()
@@ -206,7 +214,7 @@ namespace RdKitchenApp.Helpers
             if (startCounting_2)
                 elapsedTime_2++;
 
-            if (elapsedTime_2 > 1)
+            if (elapsedTime_2 > 0)//Was 1
             {
                 startCounting_2 = false;
                 elapsedTime_2 = 0;
@@ -221,7 +229,7 @@ namespace RdKitchenApp.Helpers
             if (startCounting_1)
                 elapsedTime_1++;
 
-            if (elapsedTime_1 > 1)
+            if (elapsedTime_1 > 0)//Was 1
             {
                 startCounting_1 = false;
                 elapsedTime_1 = 0;
@@ -234,6 +242,20 @@ namespace RdKitchenApp.Helpers
 
                 receivedData = "";
                 processingRequest = false;
+
+                if (awaitresponse == new List<List<OrderItem>>() || awaitresponse == new List<AppUser>())
+                {
+                    for (int i = 0; i < numRetries; i++)
+                    {
+                        if (!processingRequest)
+                        {
+                            Refresh_UI();
+                            return;
+                        }
+
+                        await Task.Delay(delaySeconds * 500);//Was 1000
+                    }
+                }
             }
         }
         private static float elapsedTime_1 = 0;
@@ -244,7 +266,7 @@ namespace RdKitchenApp.Helpers
             if (startCounting)
                 elapsedTime++;
 
-            if (elapsedTime > 1)
+            if (elapsedTime > 0)//Was 1
             {
                 startCounting = false;
                 elapsedTime = 0;
