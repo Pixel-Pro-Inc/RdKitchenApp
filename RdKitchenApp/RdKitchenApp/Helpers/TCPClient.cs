@@ -158,7 +158,11 @@ namespace RdKitchenApp.Helpers
 
                 deserializeAs = new List<List<OrderItem>>();
 
-                client.Send(requestObject.ToByteArray<RequestObject>());
+                byte[] request = requestObject.ToByteArray<RequestObject>();
+
+                string requestString = "[" + Convert.ToBase64String(request);
+
+                client.Send(requestString);
 
                 // @Yewo: Shouldn't this be a good place to throw an exception or something cause simply throwing the expected this isn't helpful
                 if (requestMethod != RequestObject.requestMethod.Get)
@@ -170,7 +174,7 @@ namespace RdKitchenApp.Helpers
                 // awaitresponse is flipped by DataRecieved event
                 while (awaitresponse == null)
                 {
-                    await Task.Delay(2500);
+                    await Task.Delay(25);
                 }
 
                 return (List<List<OrderItem>>)awaitresponse;
@@ -194,7 +198,11 @@ namespace RdKitchenApp.Helpers
 
                 deserializeAs = new List<AppUser>();
 
-                client.Send(requestObject.ToByteArray<RequestObject>());
+                byte[] request = requestObject.ToByteArray<RequestObject>();
+
+                string requestString = "[" + Convert.ToBase64String(request);
+
+                client.Send(requestString);
 
                 if (requestMethod != RequestObject.requestMethod.Get)
                     return new List<AppUser>();
@@ -204,7 +212,7 @@ namespace RdKitchenApp.Helpers
 
                 while (awaitresponse == null)
                 {
-                    await Task.Delay(2500);
+                    await Task.Delay(25);
                 }
 
                 return (List<AppUser>)awaitresponse;
@@ -214,7 +222,46 @@ namespace RdKitchenApp.Helpers
 
             return null;
         }
-        
+        static int numRetries = 10;
+        static int delaySeconds = 1;//Was 2
+
+        static bool processingRequest;
+        private static async void Events_DataReceived(object sender, DataReceivedEventArgs e)
+        {
+            var response = Encoding.UTF8.GetString(e.Data);
+
+            //Update UI after network change
+            if (response.Contains("REFRESH"))
+            {
+                for (int i = 0; i < numRetries; i++)
+                {
+                    if (!processingRequest)
+                    {
+                        Refresh_UI();
+                        return;
+                    }
+
+                    await Task.Delay(delaySeconds * 500);//Was 1000
+                }                
+            }
+
+            //Introduced retries to reduce crashes
+
+            Byte[] bytes = Convert.FromBase64String(response);
+            string receivedData = Encoding.UTF8.GetString(bytes);
+
+            for (int i = 0; i < numRetries; i++)
+            {
+                if (!processingRequest || receivedData[0] != '[')
+                {
+                    DataReceived(receivedData);//There is a data limit for every packet once exceeded is sent in another packet
+                    processingRequest = true;
+                    break;
+                }
+
+                await Task.Delay(delaySeconds * 500);//Was 1000
+            }            
+        }
         private static void Action()
         {
             Refresh_Action();
@@ -226,7 +273,7 @@ namespace RdKitchenApp.Helpers
             if (startCounting_2)
                 elapsedTime_2++;
 
-            if (elapsedTime_2 > 1)
+            if (elapsedTime_2 > 0)//Was 1
             {
                 startCounting_2 = false;
                 elapsedTime_2 = 0;
@@ -240,7 +287,7 @@ namespace RdKitchenApp.Helpers
             if (startCounting_1)
                 elapsedTime_1++;
 
-            if (elapsedTime_1 > 1)
+            if (elapsedTime_1 > 0)//Was 1
             {
                 startCounting_1 = false;
                 elapsedTime_1 = 0;
@@ -270,6 +317,20 @@ namespace RdKitchenApp.Helpers
 
                 receivedData = "";
                 processingRequest = false;
+
+                if (awaitresponse == new List<List<OrderItem>>() || awaitresponse == new List<AppUser>())
+                {
+                    for (int i = 0; i < numRetries; i++)
+                    {
+                        if (!processingRequest)
+                        {
+                            Refresh_UI();
+                            return;
+                        }
+
+                        await Task.Delay(delaySeconds * 500);//Was 1000
+                    }
+                }
             }
         }
 
@@ -279,7 +340,7 @@ namespace RdKitchenApp.Helpers
             if (startCounting)
                 elapsedTime++;
 
-            if (elapsedTime > 1)
+            if (elapsedTime > 0)//Was 1
             {
                 startCounting = false;
                 elapsedTime = 0;

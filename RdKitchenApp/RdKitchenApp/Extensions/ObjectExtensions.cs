@@ -45,6 +45,7 @@ namespace RdKitchenApp.Extensions
 
         public static byte[] ToByteArray<T>(this T obj)
         {
+            //If crash still happens address this one
             var data = JsonConvert.SerializeObject(obj);
 
             if (data == null)
@@ -62,11 +63,18 @@ namespace RdKitchenApp.Extensions
             if (data == null)
                 return default(T);
 
-            var obj = Encoding.UTF8.GetString(data);
+            try
+            {
+                var obj = Encoding.UTF8.GetString(data);
 
-            var _object = await JsonConvert.DeserializeObjectAsync<T>(obj);
-
-            return _object;
+                var _object = await JsonConvert.DeserializeObjectAsync<T>(obj);
+                return _object;
+            }
+            catch
+            {
+                //Incase Json Deserializer Sends Back Weird String We avoid crash by sending default back
+                return default(T);
+            }
         }
     }
 }

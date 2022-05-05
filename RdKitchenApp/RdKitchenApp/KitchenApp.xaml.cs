@@ -9,6 +9,7 @@ using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Xamarin.Essentials;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 
@@ -29,6 +30,8 @@ namespace RdKitchenApp
             Instance = this;
 
             NavigationPage.SetHasNavigationBar(this, false);
+
+            versionText.Text = "Version: " + AppInfo.Version + "_" + AppInfo.BuildString;
 
             UpdateOrderView(); //Display All Eligible Orders On Start
         }
