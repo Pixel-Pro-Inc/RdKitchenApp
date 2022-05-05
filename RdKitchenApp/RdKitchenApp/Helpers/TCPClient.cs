@@ -1,4 +1,5 @@
 ﻿using RdKitchenApp.Entities;
+using RdKitchenApp.Exceptions;
 using RdKitchenApp.Extensions;
 using Rg.Plugins.Popup.Services;
 using SuperSimpleTcp;
@@ -18,6 +19,70 @@ namespace RdKitchenApp.Helpers
         public static ReconnectingPopup reconnectingPopup;
         private static object deserializeAs = new List<List<OrderItem>>();
 
+        private static float elapsedTime_2 = 0;
+        private static bool startCounting_2 = false;
+
+        // these are used mostly in Events_DataRecieved
+        static int numRetries = 10;
+        static int delaySeconds = 2;
+        static bool processingRequest;
+
+        // For refresh
+        private static float elapsedTime = 0;
+        private static bool startCounting = false;
+
+        // For Data_Recieved
+        private static float elapsedTime_1 = 0;
+        private static bool startCounting_1 = false;
+
+        static object awaitresponse = null;
+
+        #region Events
+
+        private static void Events_Disconnected(object sender, ConnectionEventArgs e)
+        {
+            startCounting_2 = true;
+            elapsedTime_2 = 0;
+        }
+        private static async void Events_DataReceived(object sender, DataReceivedEventArgs e)
+        {
+            var response = Encoding.UTF8.GetString(e.Data);
+
+            //Update UI after network change
+            if (response.Contains("REFRESH"))
+            {
+                for (int i = 0; i < numRetries; i++)
+                {
+                    if (!processingRequest)
+                    {
+                        Refresh_UI();
+                        return;
+                    }
+
+                    await Task.Delay(delaySeconds * 1000);
+                }
+            }
+
+            //Introduced retries to reduce crashes
+
+            Byte[] bytes = Convert.FromBase64String(response);
+            string receivedData = Encoding.UTF8.GetString(bytes);
+
+            for (int i = 0; i < numRetries; i++)
+            {
+                if (!processingRequest || receivedData[0] != '[')
+                {
+                    DataReceived(receivedData);//There is a data limit for every packet once exceeded is sent in another packet
+                    processingRequest = true;
+                    break;
+                }
+
+                await Task.Delay(delaySeconds * 1000);
+            }
+        }
+
+        #endregion
+
         public async static Task<bool> TestIP(string ip)
         {
             client = new SimpleTcpClient(ip + ":2000");
@@ -35,10 +100,7 @@ namespace RdKitchenApp.Helpers
 
             return true;
         }
-        public static bool Client_IsConnected()
-        {
-            return client.IsConnected;
-        }
+        public static bool Client_IsConnected()=> client.IsConnected;
 
         public async static Task CreateClient()
         {
@@ -80,14 +142,9 @@ namespace RdKitchenApp.Helpers
                 return true;
             });
         }
+        // @Yewo: We don't use block here, so can we remove it?
         static int block = 0;
-        private static void Events_Disconnected(object sender, ConnectionEventArgs e)
-        {
-            startCounting_2 = true;
-            elapsedTime_2 = 0;
-        }
 
-        static object awaitresponse = null;
         public async static Task<List<List<OrderItem>>> SendRequest(object data, string fPath, RequestObject.requestMethod requestMethod)
         {
             if (client.IsConnected)
@@ -103,12 +160,14 @@ namespace RdKitchenApp.Helpers
 
                 client.Send(requestObject.ToByteArray<RequestObject>());
 
+                // @Yewo: Shouldn't this be a good place to throw an exception or something cause simply throwing the expected this isn't helpful
                 if (requestMethod != RequestObject.requestMethod.Get)
                     return new List<List<OrderItem>>();                
 
                 //await response
                 awaitresponse = null; // Set the state as undetermined
 
+                // awaitresponse is flipped by DataRecieved event
                 while (awaitresponse == null)
                 {
                     await Task.Delay(2500);
@@ -121,7 +180,7 @@ namespace RdKitchenApp.Helpers
 
             return null;
         }
-
+        // REFACTOR: This method to similar to the previous one. Consider using a base method or a generic type defined for both types eg. where T is List<OrderItem>, Appuser
         public async static Task<List<AppUser>> SendRequest(string fPath, RequestObject.requestMethod requestMethod)
         {
             if (client.IsConnected)
@@ -155,46 +214,7 @@ namespace RdKitchenApp.Helpers
 
             return null;
         }
-        static int numRetries = 10;
-        static int delaySeconds = 2;
-
-        static bool processingRequest;
-        private static async void Events_DataReceived(object sender, DataReceivedEventArgs e)
-        {
-            var response = Encoding.UTF8.GetString(e.Data);
-
-            //Update UI after network change
-            if (response.Contains("REFRESH"))
-            {
-                for (int i = 0; i < numRetries; i++)
-                {
-                    if (!processingRequest)
-                    {
-                        Refresh_UI();
-                        return;
-                    }
-
-                    await Task.Delay(delaySeconds * 1000);
-                }                
-            }
-
-            //Introduced retries to reduce crashes
-
-            Byte[] bytes = Convert.FromBase64String(response);
-            string receivedData = Encoding.UTF8.GetString(bytes);
-
-            for (int i = 0; i < numRetries; i++)
-            {
-                if (!processingRequest || receivedData[0] != '[')
-                {
-                    DataReceived(receivedData);//There is a data limit for every packet once exceeded is sent in another packet
-                    processingRequest = true;
-                    break;
-                }
-
-                await Task.Delay(delaySeconds * 1000);
-            }            
-        }
+        
         private static void Action()
         {
             Refresh_Action();
@@ -214,8 +234,7 @@ namespace RdKitchenApp.Helpers
                 Reconnect();
             }
         }
-        private static float elapsedTime_2 = 0;
-        private static bool startCounting_2 = false;
+       
         private async static void DataReceived_Action()
         {
             if (startCounting_1)
@@ -226,6 +245,23 @@ namespace RdKitchenApp.Helpers
                 startCounting_1 = false;
                 elapsedTime_1 = 0;
 
+                // NOTE: This try block is to test if the deserializeAs is the expected type it is supposed to be.
+                // Cause maybe we are expecting an OrderItem, but we are still getting it as an AppUser
+                // @Yewo: What do you think, let's uncomment this baby. or you know, we can just go into development and do it there
+                /*
+                  try
+                {
+                    if (deserializeAs is List<List<OrderItem>>)
+                        awaitresponse = await (Encoding.UTF8.GetBytes(receivedData)).FromByteArray<List<List<OrderItem>>>();
+
+                    if (deserializeAs is List<AppUser>)
+                        awaitresponse = await (Encoding.UTF8.GetBytes(receivedData)).FromByteArray<List<AppUser>>();
+                }
+                catch
+                {
+                    throw new UnexpectedDeserializableObject("The deserialize object did not come as a List<List<OrderItem>> || List<AppUser>");
+                }
+                 */
                 if (deserializeAs is List<List<OrderItem>>)
                     awaitresponse = await (Encoding.UTF8.GetBytes(receivedData)).FromByteArray<List<List<OrderItem>>>();
 
@@ -236,8 +272,6 @@ namespace RdKitchenApp.Helpers
                 processingRequest = false;
             }
         }
-        private static float elapsedTime_1 = 0;
-        private static bool startCounting_1 = false;
 
         private static void Refresh_Action()
         {
@@ -253,14 +287,36 @@ namespace RdKitchenApp.Helpers
                 {
                     KitchenApp.Instance.DatabaseChangeListenerUpdate();
                 }
-                catch
+
+                // @Yewo: The following blocks are so we can find out why the tablet acts out when it is trying to update menu orders as mentioned in my experience of the bug
+                // For a reminder this is what happens:
+                //// Encountered that same bug where the tablet doesn't update, then I log out and log back in and it takes forever to log back in
+                //   Logged in and it finnally worked but there are now double orders
+                //   I think it some how remebered in local but didn't show, and when it finnally synced up, it pulled from the POS itself
+                //   It resolved itself when you try to update one of the duplicates
+                //   But now when I hit confirm collection its taking spans to load
+                //   The loading stopped immeditely I made a new order, but they come up as double orders as well
+                //   Tried to update new order, takes forever to process request
+                
+                catch (UnexpectedDeserializableObject unexpectedDeserializableObject)
                 {
-                    return;
-                }                
+                    // Here would be were some error handling would go but I haven't really thought of how to remedy it.
+                    // like say they get the wrong type. I only really want the user to know that this happened and log it
+                    // Go to the exceptions definition for an understanding of what this should do
+                    throw unexpectedDeserializableObject;
+                }
+                catch (DatabaseChangeListeningException dbChangedListeningException)
+                {
+                    // I only really expect this to log that this happened. Not that there is any solution I can think of here
+                    throw dbChangedListeningException;
+                }
+                // UPDATE: This is where your initial catch statement was. I don't expect the previous two expections to be caught cause I commented out where they were
+                // thrown. Which means the only block that will fire is this catch block. But if your catch blocks are empty then the try keyword as a whole is reduntant
+                catch { return; }
+                 
             }
         }
-        private static float elapsedTime = 0;
-        private static bool startCounting = false;
+       
         private static void Refresh_UI()
         {
             startCounting = true;
