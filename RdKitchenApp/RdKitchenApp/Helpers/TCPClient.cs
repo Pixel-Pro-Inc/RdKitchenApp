@@ -273,6 +273,7 @@ namespace RdKitchenApp.Helpers
             }
         }
 
+        // REFACTOR: Consider making a delegate or finding a timer delegate and have DatabaseChangeListenerUpdate() become an event that will subscribe to it.
         private static void Refresh_Action()
         {
             if (startCounting)
@@ -297,6 +298,8 @@ namespace RdKitchenApp.Helpers
                 //   But now when I hit confirm collection its taking spans to load
                 //   The loading stopped immeditely I made a new order, but they come up as double orders as well
                 //   Tried to update new order, takes forever to process request
+
+                // NOTE: its necessary to have the KitchenApp called cause we want the Viewer to be updated everytime we refresh anyways
                 
                 catch (UnexpectedDeserializableObject unexpectedDeserializableObject)
                 {

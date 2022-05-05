@@ -213,6 +213,9 @@ foreach (var order in orderViewer.Children)
             }
              */
         }
+
+        // @Abel: Look down
+        // TRACK: This is the last place that I was
         private void ResetBindings()
         {
             int count = 0;
