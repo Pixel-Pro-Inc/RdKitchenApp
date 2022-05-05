@@ -222,46 +222,6 @@ namespace RdKitchenApp.Helpers
 
             return null;
         }
-        static int numRetries = 10;
-        static int delaySeconds = 1;//Was 2
-
-        static bool processingRequest;
-        private static async void Events_DataReceived(object sender, DataReceivedEventArgs e)
-        {
-            var response = Encoding.UTF8.GetString(e.Data);
-
-            //Update UI after network change
-            if (response.Contains("REFRESH"))
-            {
-                for (int i = 0; i < numRetries; i++)
-                {
-                    if (!processingRequest)
-                    {
-                        Refresh_UI();
-                        return;
-                    }
-
-                    await Task.Delay(delaySeconds * 500);//Was 1000
-                }                
-            }
-
-            //Introduced retries to reduce crashes
-
-            Byte[] bytes = Convert.FromBase64String(response);
-            string receivedData = Encoding.UTF8.GetString(bytes);
-
-            for (int i = 0; i < numRetries; i++)
-            {
-                if (!processingRequest || receivedData[0] != '[')
-                {
-                    DataReceived(receivedData);//There is a data limit for every packet once exceeded is sent in another packet
-                    processingRequest = true;
-                    break;
-                }
-
-                await Task.Delay(delaySeconds * 500);//Was 1000
-            }            
-        }
         private static void Action()
         {
             Refresh_Action();
