@@ -35,7 +35,71 @@ namespace RdKitchenApp
 
             UpdateOrderView(); //Display All Eligible Orders On Start
         }
-        
+
+        async void Logic(int Index, int Index1)
+        {
+            await UpdateDatabase(_orders[Index][Index1]);
+
+            //Show Popup Message            
+            processingPopUp = new ProcessingPopUp();
+            await PopupNavigation.PushAsync(processingPopUp, true);
+
+            if (!TCPClient.Client_IsConnected())
+                return;
+
+            //Check Order Completed
+            int count = _orders[Index].Where(o => o.Fufilled).Count();
+
+            if (count != _orders[Index].Count)
+                return;
+
+            //SendSMS
+            string orderNumber = _orders[Index][Index1].OrderNumber.Substring(_orders[Index][Index1].OrderNumber.IndexOf('_') + 1, 4);
+            SendSMS(_orders[Index][Index1].PhoneNumber, orderNumber);
+        }
+
+        #region Download
+
+        List<string> GetOrderNumbers(List<List<OrderItem>> orderItems)
+        {
+            List<string> orderNumbers = new List<string>();
+            // NOTE: So I'm thinking this might be a good place to have the dictionary types. Only because I think it might be easier 
+            // to do data algorithms with. Since they can work with keys and such
+
+            foreach (var item in orderItems)
+            {
+                foreach (var itm in item)
+                {
+                    if (!orderNumbers.Contains(itm.OrderNumber))
+                    {
+                        orderNumbers.Add(itm.OrderNumber);
+                    }
+                }
+            }
+
+            return orderNumbers;
+        }
+        async Task<List<List<OrderItem>>> GetOrderItems()
+        {
+            List<List<OrderItem>> orders = new List<List<OrderItem>>();
+
+            orders = await DataContext.Instance.GetOrders();
+
+            if (orders == null)
+                return null;
+
+            orders = orders.Where(o => o.Where(p => p.Fufilled).ToList().Count != o.Count).ToList();
+            orders = orders.Where(o => !o[0].MarkedForDeletion).ToList();
+
+            message.IsVisible = !(orders.Count > 0);
+
+            return orders;
+        }
+
+        #endregion
+
+        #region Update
+
         //This basically gets the orders. We need this called when we reconnect to the server.  When does it get disconnected?
         public async void UpdateOrderView(bool newOrders = false)
         {
@@ -47,7 +111,7 @@ namespace RdKitchenApp
 
             var result = await GetOrderItems();
 
-            List<List<OrderItem>> orders = result == null? new List<List<OrderItem>>() : result;
+            List<List<OrderItem>> orders = result == null ? new List<List<OrderItem>>() : result;
 
             orders = Formatting.ChronologicalOrderList(orders);
 
@@ -55,6 +119,11 @@ namespace RdKitchenApp
 
             bool skip = false;
             // @Yewo: I kinda need you explain what you are trying to do here specifically
+            // I believe it is trying to check in every order which orderItem has been fufilled,
+            // It skips the order that has all the orders fullfilled from showing and adds them when
+            // they aren't 
+            // REFACTOR: Consider extracting this logic cause it is important and we need a closer eye on this to maintain, maybe call it, FindFufilled, then maybe
+            // inject the function into it
             for (int i = 0; i < orders.Count; i++)
             {
                 int count = 0;
@@ -63,7 +132,7 @@ namespace RdKitchenApp
                     if (item.Fufilled == true)
                         count++;
 
-                    skip = false;                    
+                    skip = false;
 
                     if (count == orders[i].Count)
                     {
@@ -73,10 +142,14 @@ namespace RdKitchenApp
                 }
 
                 if (!skip)
+                {
+                    // Adds the order to the screen by giving the parameters of the order, and the index of the order
                     orderViewer.Children.Add(GetFrame(orders[i], i));
+                }
+
             }
 
-            if(orderViewer.Children.Count == 0)
+            if (orderViewer.Children.Count == 0)
             {
                 message.IsVisible = true;
             }
@@ -86,12 +159,11 @@ namespace RdKitchenApp
             if (newOrders)
                 DependencyService.Get<INotification>().CreateNotification();
 
-        }        
-
+        }
         public async void DatabaseChangeListenerUpdate()
         {
             List<string> orderNumbers = GetOrderNumbers(_orders);//List of OrderNumbers Stored Locally
-            
+
             List<List<OrderItem>> orders = await GetOrderItems();//Call For Orders From Server
 
             // This try block is to see if it fails to get the data it needs
@@ -216,74 +288,25 @@ foreach (var order in orderViewer.Children)
             }
              */
         }
-
-        // @Abel: Look down
-        // TRACK: This is the last place that I was
-        private void ResetBindings()
+        async Task UpdateDatabase(OrderItem order)
         {
-            int count = 0;
-            foreach (var order in orderViewer.Children)
-            {
-                //Partially Fufilled
-                Frame frame = ((Frame)order);
-                StackLayout stackLayout = (StackLayout)frame.Content;
+            string branchId = (new SerializedObjectManager().RetrieveData("BranchId")).ToString();
+            string fullPath = "Order/" + branchId + "/" + order.OrderNumber + "/" + order.Id.ToString();
 
-                StackLayout stackLayout_1 = (StackLayout)stackLayout.Children[1];
-
-                StackLayout stackLayout_2 = (StackLayout)stackLayout_1.Children[3];//Status Holder
-
-                for (int i = 1; i < stackLayout_2.Children.Count; i++)
-                {
-                    var checkBox = (CheckBox)(stackLayout_2.Children[i]);
-
-                    object[] orderIndexPair = { count, (i - 1) };
-
-                    checkBox.BindingContext = orderIndexPair;
-                }
-                count++;
-            }
+            await DataContext.Instance.Update(fullPath, order);
         }
 
-        List<string> GetOrderNumbers(List<List<OrderItem>> orderItems)
-        {
-            List<string> orderNumbers = new List<string>();
+        #endregion
 
-            foreach (var item in orderItems)
-            {
-                foreach (var itm in item)
-                {
-                    if (!orderNumbers.Contains(itm.OrderNumber))
-                    {
-                        orderNumbers.Add(itm.OrderNumber);
-                    }
-                }
-            }
-
-            return orderNumbers;
-        }
-
-        async Task<List<List<OrderItem>>> GetOrderItems()
-        {
-            List<List<OrderItem>> orders = new List<List<OrderItem>>();
-
-            orders = await DataContext.Instance.GetOrders();
-
-            if (orders == null)
-                return null;
-
-            orders = orders.Where(o => o.Where(p => p.Fufilled).ToList().Count != o.Count).ToList();
-            orders = orders.Where(o => !o[0].MarkedForDeletion).ToList();
-
-            message.IsVisible = !(orders.Count > 0);
-
-            return orders;
-        }
+        #region View Logic
 
         Frame GetFrame(List<OrderItem> order, int index)
         {
+            #region Layout
+
             Frame frame = new Frame()
             {
-                BackgroundColor = Color.FromHex("#343434")            
+                BackgroundColor = Color.FromHex("#343434")
             };
 
             StackLayout stackLayout = new StackLayout();
@@ -324,10 +347,12 @@ foreach (var order in orderViewer.Children)
 
             button.BindingContext = stackLayout2;
 
+            #endregion
+
             #region Item
             StackLayout stackLayout3 = new StackLayout()
             {
-                Margin = new Thickness(10,0,10,0)
+                Margin = new Thickness(10, 0, 10, 0)
             };
 
             Label label1 = new Label()
@@ -429,7 +454,7 @@ foreach (var order in orderViewer.Children)
                 {
                     label4.Text = "-";
                 }
-                
+
 
                 stackLayout4.Children.Add(label4);
             }
@@ -569,7 +594,7 @@ foreach (var order in orderViewer.Children)
                 };
 
                 string sauces = "";
-                if(order[i].Sauces != null)
+                if (order[i].Sauces != null)
                 {
                     foreach (var item in order[i].Sauces)
                     {
@@ -646,19 +671,43 @@ foreach (var order in orderViewer.Children)
             return frame;
         }
 
-        async Task UpdateDatabase(OrderItem order)
+        private void View_Clicked(object sender, EventArgs e)
         {
-            string branchId = (new SerializedObjectManager().RetrieveData("BranchId")).ToString();
-            string fullPath = "Order/" + branchId + "/" + order.OrderNumber + "/" + order.Id.ToString();
+            Button b = (Button)sender;
 
-            await DataContext.Instance.Update(fullPath, order);
+            StackLayout stack = (StackLayout)b.BindingContext;
+
+            stack.IsVisible = !stack.IsVisible;
+
+            if (b.Text == "View")
+            {
+                b.Text = "Hide";
+                return;
+            }
+
+            b.Text = "View";
         }
 
+        // @Yewo: Seriously, what does block do
+        int block = 0;
+        private async void Logout_Button_Clicked(object sender, EventArgs e)
+        {
+            if (block != 0)
+                return;
+
+            block = 1;
+
+            //Next Page
+            //Application.Current.MainPage = new Login();
+            LoginPage();
+        }
         private void Status_CheckedChanged(object sender, CheckedChangedEventArgs e)
         {
             CheckBox checkBox = (CheckBox)sender;
 
+            // This is the order position
             int Index = (int)((object[])checkBox.BindingContext)[0];
+            // This is the order item position. Brought in from logic within GetFrame() under the status region
             int Index1 = (int)((object[])checkBox.BindingContext)[1];
 
             if (TCPClient.Client_IsConnected())
@@ -674,30 +723,9 @@ foreach (var order in orderViewer.Children)
             Logic(Index, Index1);
         }
 
-        async void Logic(int Index, int Index1)
-        {
-            await UpdateDatabase(_orders[Index][Index1]);
-
-            //Show Popup Message            
-            processingPopUp = new ProcessingPopUp();
-            await PopupNavigation.PushAsync(processingPopUp, true);
-
-            if (!TCPClient.Client_IsConnected())
-                return;
-
-            //Check Order Completed
-            int count = _orders[Index].Where(o => o.Fufilled).Count();            
-
-            if (count != _orders[Index].Count)
-                return;
-
-            //SendSMS
-            string orderNumber = _orders[Index][Index1].OrderNumber.Substring(_orders[Index][Index1].OrderNumber.IndexOf('_') + 1, 4);
-            SendSMS(_orders[Index][Index1].PhoneNumber, orderNumber);            
-        }
+        #endregion
 
         List<string> sentOutSMS = new List<string>();
-
         async void SendSMS(string phoneNumber, string orderNumber)
         {
             if (!sentOutSMS.Contains(orderNumber))
@@ -716,42 +744,35 @@ foreach (var order in orderViewer.Children)
             catch
             {
                 return;
-            }        
-        }
-
-        private void View_Clicked(object sender, EventArgs e)
-        {
-            Button b = (Button)sender;
-
-            StackLayout stack = (StackLayout)b.BindingContext;
-
-            stack.IsVisible = !stack.IsVisible;
-
-            if (b.Text == "View")
-            {
-                b.Text = "Hide";
-                return;
             }
-
-            b.Text = "View";
         }
+        public async void LoginPage()=> await Navigation.PushAsync(new Login());//Resets back to login page
 
-        int block = 0;
-        private async void Logout_Button_Clicked(object sender, EventArgs e)
+        // @Yewo: What was this supposed to do?
+        private void ResetBindings()
         {
-            if (block != 0)
-                return;
+            int count = 0;
+            foreach (var order in orderViewer.Children)
+            {
+                //Partially Fufilled
+                Frame frame = ((Frame)order);
+                StackLayout stackLayout = (StackLayout)frame.Content;
 
-            block = 1;
+                StackLayout stackLayout_1 = (StackLayout)stackLayout.Children[1];
 
-            //Next Page
-            //Application.Current.MainPage = new Login();
-            LoginPage();
+                StackLayout stackLayout_2 = (StackLayout)stackLayout_1.Children[3];//Status Holder
+
+                for (int i = 1; i < stackLayout_2.Children.Count; i++)
+                {
+                    var checkBox = (CheckBox)(stackLayout_2.Children[i]);
+
+                    object[] orderIndexPair = { count, (i - 1) };
+
+                    checkBox.BindingContext = orderIndexPair;
+                }
+                count++;
+            }
         }
 
-        public async void LoginPage()
-        {
-            await Navigation.PushAsync(new Login());//Resets back to login page
-        }
     }
 }

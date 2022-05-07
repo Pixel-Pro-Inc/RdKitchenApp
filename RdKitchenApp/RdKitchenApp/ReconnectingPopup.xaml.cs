@@ -1,4 +1,5 @@
-﻿using RdKitchenApp.Helpers;
+﻿using RdKitchenApp.Exceptions;
+using RdKitchenApp.Helpers;
 using Rg.Plugins.Popup.Pages;
 using Rg.Plugins.Popup.Services;
 using System;
@@ -26,53 +27,27 @@ namespace RdKitchenApp
             StartUp();// Basically tries to connect to the server
         }
 
-        async void ShowPage()
-        {
-            await PopupNavigation.PushAsync(this, true);
-        }
-
-        async void StartUp()
-        {
-            await ConnectToServer();
-        }
-
+        async void ShowPage()=> await PopupNavigation.PushAsync(this, true);
+        async void StartUp()=> await ConnectToServer();
         public async Task ConnectToServer()
         {
-            await Task.Delay(5000);// This give the page a chance for the page to show up instead of stealing resources
+            try
+            {
+                await Task.Delay(5000);// This give the page a chance for the page to show up instead of stealing resources
 
-            await TCPClient.CreateClient();
-
-
-
-            /*
-             So when we have this tablet open, we have to find a way to simulate it disconnecting.
-            then 
-            We need it to hit this break point.
-            If that's succesful then it will attempt to updateOrderView
-            If thats successful it has to get the new order we have so.......
-
-            Connect to the server.
-            Disconnect.
-            Add an order
-            reconnect
-            Check if it reflects
-             */
-
+                await TCPClient.CreateClient();
+            }
+            catch(FailedToConnectToServerException FailedToConnectToServerException)
+            {
+                // We don't need to do any handling here cause it already prints the message to the user about network connection. But its necessary to have the exception
+                // caught here in the event that that unknown reason for the error pops up ( it results in an empty ip). Also I want to log all the exceptions thrown
+                // at some point. And I just haven't figured out how yet.
+                // NOTE: Remember, always throw the exception you just caught
+                Console.WriteLine($"If it gets to this point that means we don't know why its hasn't connected, the error is {0}" +
+                   "But this was thrown when reconnecting", FailedToConnectToServerException.Message);
+                throw FailedToConnectToServerException;
+            }
         }
-        int block_1 = 0; 
-        public void DisplayMessageAlert()
-        {
-            if (block_1 != 0)
-                return;
-
-            block_1 = 1;
-
-            message.IsVisible = true;
-            activity.IsVisible = false;
-
-            block = 0;
-        }
-
         //This is the only place where we know it will be connected. Everywhere else it hasn't.
         public void Connected()
         {
@@ -86,13 +61,28 @@ namespace RdKitchenApp
                 KitchenApp.Instance.LoginPage();
 
             }
-            catch
+            catch (FailedToConnectToServerException FailedToConnectToServerException)
             {
-                Console.WriteLine("If it gets to this point that means we don't know why its hasn't connected");
-                return;
+                Console.WriteLine($"If it gets to this point that means we don't know why its hasn't connected, the error is {0}" +
+                    "But this was thrown when reconnecting", FailedToConnectToServerException.Message);
+                throw FailedToConnectToServerException;
             }
         }
+        #region View
 
+        int block_1 = 0;
+        public void DisplayMessageAlert()
+        {
+            if (block_1 != 0)
+                return;
+
+            block_1 = 1;
+
+            message.IsVisible = true;
+            activity.IsVisible = false;
+
+            block = 0;
+        }
         int block = 0;
         private void Retry_Button_Clicked(object sender, EventArgs e)
         {
@@ -107,5 +97,8 @@ namespace RdKitchenApp
 
             StartUp();
         }
+
+        #endregion
+
     }
 }

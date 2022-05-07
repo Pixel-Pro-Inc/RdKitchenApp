@@ -19,6 +19,9 @@ namespace RdKitchenApp.Helpers
         public static ReconnectingPopup reconnectingPopup;
         private static object deserializeAs = new List<List<OrderItem>>();
 
+        // This is so we store the ip of the server if found and ONLY in the even that if constantly fails to connect to the server even if it is there.
+        private static string _ip { get; set; }
+
         private static float elapsedTime_2 = 0;
         private static bool startCounting_2 = false;
 
@@ -104,20 +107,55 @@ namespace RdKitchenApp.Helpers
 
         public async static Task CreateClient()
         {
-            string ip = await LocalIP.GetServerIP();
+            // NOTE: We can't have this property not be a nullable type cause it will cause an exception. So if we switch this type, please set it to be nullable
+            string ip;
+            #region Tries to get the server IP
 
-            if(ip == "" && reconnectingPopup == null)
+            // Here we are trying to check if it falls into a problem when searching for the server, most likely the overflow
+            try
+            {
+                // We don't need to worry about this string being null. All strings are already nullable.
+                ip = await LocalIP.GetServerIP();
+            }
+            //This is in the event that the overflow happened. Else it would skip this and continued along the block
+            catch (FailedToConnectToServerException FailedToConnectToServerException) when(FailedToConnectToServerException.InnerException is StackOverflowException)
+            {
+                // This is so if it continues to fail, a Hail Mary will be to used, an ip stored
+                ip = _ip;
+                throw FailedToConnectToServerException;
+            }
+
+            #endregion
+
+            #region Retries if the ip still empty due to no connection or some other bug not an overflow
+
+            // REFACTOR: This is a recursive that could easily end up as a stack overflow. We might need to add a count or something to limit the amout of retrys
+            // I'm thinking this is where the error is, cause say it doesn't connect the first time, it will fire the same method but this method wasn't finished,
+            // basically 'deadlock'
+            if (ip == "" && reconnectingPopup == null)
             {
                 serverConnectPage.DisplayMessageAlert("Make sure you are connected to a Local Area Connection. You do not need to have internet access but you need a network connection. You can also try restarting the tablet.");
 
                 await Task.Delay(5000);//Retry in 5 seconds
+
+                // NOTE: We don't want to have the retry method show up here cause it handles it's own errors differently. So we will handle here differently in turn
                 await CreateClient();
+                // UPDATE: @Yewo I added a return so that we don't have the same method being used/ called simutaneously. Hopefully this solves the bug
+                return;
             }
 
+            #endregion
+
+            // In the event that we are reconnecting and we still don't have an ip so the unknow bug sends the ip as null still
+            // We aren't using a try block here cause if this boolean expression is true then we know something is wrong
             if (ip == "" && reconnectingPopup != null)
             {
                 reconnectingPopup.DisplayMessageAlert();
-                return;
+                // This is so we know if there is no ip adress given cause in the event that we eventually get the reconnectpop to be instanciated,
+                // there might still be no ip given
+                // NOTE: When you throw an exception the method stops executing right after the throw
+                // UPDATE: There was a return keyword here. And it has been replaced with the throw keyword in terms of functionality.
+                throw new FailedToConnectToServerException("There is no server ip address given, please check your network connection");
             }
 
             client = new SimpleTcpClient(ip + ":2000");
@@ -125,7 +163,22 @@ namespace RdKitchenApp.Helpers
             //Im not sure what this does
             client.Events.Disconnected += Events_Disconnected;
 
-            client.Connect();
+            #region Tries to connect the client
+            // tries to connect can catches if the ip is still null despite all the checks in place
+            try
+            {
+                client.Connect();
+                //NOTE: If the return keyword is done in the try, it will exit the method. if it is done with the method in the try, it follows along the block (obviously)
+            }
+            // This is in the even that it was connecting for the first time, but we don't really know why it failed to connect
+            catch (FailedToConnectToServerException FailedToConnectToServerException)
+            {
+                Console.WriteLine($"If it gets to this point that means we don't know why its hasn't connected, the error is {0}" +
+                    "But this was thrown when connecting to the server for the first time", FailedToConnectToServerException.Message);
+                throw FailedToConnectToServerException;
+            }
+
+            #endregion
 
             //Basically checking if we are connecting for the first time or not
             //If first time
@@ -134,6 +187,9 @@ namespace RdKitchenApp.Helpers
             //If reconnecting
             if (reconnectingPopup != null)
                 reconnectingPopup.Connected();
+
+            // This is a just in case line as a contingency if we experience an overflow when looking for the server ip. It will then try this stored one
+            _ip = ip;
 
             Device.StartTimer(TimeSpan.FromSeconds(1), () =>
             {
@@ -309,6 +365,7 @@ namespace RdKitchenApp.Helpers
                 {
                     KitchenApp.Instance.DatabaseChangeListenerUpdate();
                 }
+                // TODO: @Abel please do the exception handling of the below situations
 
                 // @Yewo: The following blocks are so we can find out why the tablet acts out when it is trying to update menu orders as mentioned in my experience of the bug
                 // For a reminder this is what happens:
@@ -359,7 +416,7 @@ namespace RdKitchenApp.Helpers
             if (reconnectingPopup != null)
                 return;
 
-            //Show Popup
+            // TODO: Show Popup
             reconnectingPopup = reconnectingPopup == null ? new ReconnectingPopup() : reconnectingPopup;          
         }
     }
