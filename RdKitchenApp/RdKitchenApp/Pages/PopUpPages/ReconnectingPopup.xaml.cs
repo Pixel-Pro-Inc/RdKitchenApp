@@ -27,7 +27,6 @@ namespace RdKitchenApp
             StartUp();// Basically tries to connect to the server
         }
 
-        async void ShowPage()=> await PopupNavigation.PushAsync(this, true);
         async void StartUp()=> await ConnectToServer();
         public async Task ConnectToServer()
         {
@@ -70,6 +69,7 @@ namespace RdKitchenApp
         }
         #region View
 
+        async void ShowPage() => await PopupNavigation.PushAsync(this, true);
         int block_1 = 0;
         public void DisplayMessageAlert()
         {

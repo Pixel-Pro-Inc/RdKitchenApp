@@ -21,27 +21,39 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Update="KitchenApp.xaml">
+    <EmbeddedResource Update="FlyoutPage1Detail.xaml">
       <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
     </EmbeddedResource>
-    <EmbeddedResource Update="Login.xaml">
+    <EmbeddedResource Update="Pages\PopUpPages\ForcedToLogoutPopup.xaml">
       <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
     </EmbeddedResource>
-    <EmbeddedResource Update="ProcessingPopUp.xaml">
+    <EmbeddedResource Update="Pages\KitchenApp.xaml">
       <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
     </EmbeddedResource>
-    <EmbeddedResource Update="ReconnectingPopup.xaml">
+    <EmbeddedResource Update="Pages\Login.xaml">
       <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
     </EmbeddedResource>
-    <EmbeddedResource Update="ServerConnect.xaml">
+    <EmbeddedResource Update="Pages\PopUpPages\ProcessingPopUp.xaml">
       <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
     </EmbeddedResource>
-    <EmbeddedResource Update="SplashScreen.xaml">
+    <EmbeddedResource Update="Pages\PopUpPages\ReconnectingPopup.xaml">
+      <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Pages\ServerConnect.xaml">
+      <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Pages\SplashScreen.xaml">
       <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
     </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Extensions\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Pages\PopUpPages\ForcedToLogoutPopup.xaml.cs">
+      <DependentUpon>ForcedToLogoutPopup.xaml</DependentUpon>
+    </Compile>
   </ItemGroup>
 </Project>

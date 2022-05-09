@@ -63,9 +63,14 @@ namespace RdKitchenApp
         List<string> GetOrderNumbers(List<List<OrderItem>> orderItems)
         {
             List<string> orderNumbers = new List<string>();
+
+            // I'm assuming that if Orders are passedd into this as a list we don't expect them to ever be null. Which is why I'm throwing this expection in that case
+            // but there is also the case where there are no orders but if that's the case orders will exist, but the count will be zero
+            if (orderItems == null) throw new NullOrderException("The orders given were null, they should at least be empty/ count==0", 
+                new NullReferenceException("If global orders were passed in as null, we aren't supposed to have that. Never set it to null"));
+
             // NOTE: So I'm thinking this might be a good place to have the dictionary types. Only because I think it might be easier 
             // to do data algorithms with. Since they can work with keys and such
-
             foreach (var item in orderItems)
             {
                 foreach (var itm in item)
@@ -83,10 +88,28 @@ namespace RdKitchenApp
         {
             List<List<OrderItem>> orders = new List<List<OrderItem>>();
 
-            orders = await DataContext.Instance.GetOrders();
+            try
+            {
+                // Its possible for result to be set to null, for example, when the tablet is disconnected from the server. but we really don't want it to be null
+                orders = await DataContext.Instance.GetOrders();
+            }
+            // We have the two catch blocks here cause there isn't a way to put them in the same block but we need both explicitly mentioned cause we need to know what happened
+            catch (FailedToConnectToServerException FailedToConnectToServerException)
+            {
+                //This ensures the orders don't come in as null
+                orders = orders == null ? new List<List<OrderItem>>() : orders;
+                throw FailedToConnectToServerException;
+            }
+            catch (NotConnectedToServerException NotConnectedToServerException)
+            {
+                //This ensures the orders don't come in as null
+                orders = orders == null ? new List<List<OrderItem>>() : orders;
+                throw NotConnectedToServerException;
+            }
 
+            // It is possible for there to be null orders. But we don't want them. There is handling to make sure, but in case they don't catch it this is here
             if (orders == null)
-                return null;
+                throw new NullReferenceException("Orders are never expected to be null since we have exception handling to ensure it doesn't happen ");
 
             orders = orders.Where(o => o.Where(p => p.Fufilled).ToList().Count != o.Count).ToList();
             orders = orders.Where(o => !o[0].MarkedForDeletion).ToList();
@@ -100,7 +123,7 @@ namespace RdKitchenApp
 
         #region Update
 
-        //This basically gets the orders. We need this called when we reconnect to the server.  When does it get disconnected?
+        //This basically gets the orders. We need this called when we reconnect to the server. 
         public async void UpdateOrderView(bool newOrders = false)
         {
             orderViewer.Children.Clear();
@@ -109,9 +132,7 @@ namespace RdKitchenApp
 
             message.IsVisible = false;
 
-            var result = await GetOrderItems();
-
-            List<List<OrderItem>> orders = result == null ? new List<List<OrderItem>>() : result;
+            List<List<OrderItem>> orders = await GetOrderItems();
 
             orders = Formatting.ChronologicalOrderList(orders);
 
@@ -162,28 +183,28 @@ namespace RdKitchenApp
         }
         public async void DatabaseChangeListenerUpdate()
         {
-            List<string> orderNumbers = GetOrderNumbers(_orders);//List of OrderNumbers Stored Locally
+            List<string> orderNumbers;//List of OrderNumbers Stored Locally
 
-            List<List<OrderItem>> orders = await GetOrderItems();//Call For Orders From Server
+            List<List<OrderItem>> orders;//Call For Orders From Server
 
             // This try block is to see if it fails to get the data it needs
-            /*
-             try
+            try
             {
-                List<string> orderNumbers = GetOrderNumbers(_orders);//List of OrderNumbers Stored Locally
-
-                List<List<OrderItem>> orders = await GetOrderItems();//Call For Orders From Server
+                 orderNumbers = GetOrderNumbers(_orders);//List of OrderNumbers Stored Locally
             }
-            catch
+            catch(NullOrderException NullOrderException)
             {
-                throw new DatabaseChangeListeningException(" It failed to update the changes from the database. Either check the orders or the _orders or maybe the " +
-                                        "UpdateViewer failed");
+                // We know that eventually something gets passed out in GetOrderItems() so we use it to set the _orders in the even that they are null.
+                _orders = await GetOrderItems(); 
+                throw NullOrderException;
             }
-             */
+            catch // This is here cause Yewo had something similiar, and it serves to catch .NET exceptions
+            { return; }
 
-
-            // @Yewo: why are you overwriting the data you just got locally with the Server data?
+            orders = await GetOrderItems();//Call For Orders From Server
+            // We use orders to continue to calculate so that's why we have these two lines
             _orders = orders;
+
             #region collapse
             /*if (orders.Where(o => !orderNumbers.Contains(o[0].OrderNumber)).Count() > 0)//If new items exist add to bottom of list
 {
@@ -269,24 +290,12 @@ foreach (var order in orderViewer.Children)
 }*/
             #endregion
 
-
-
             if (processingPopUp != null)
                 processingPopUp.Close();
 
+            // UPDATE: I removed the try block here cause I don't expect it to ever fail
             UpdateOrderView(orders.Where(o => !orderNumbers.Contains(o[0].OrderNumber)).Count() > 0);//Refresh whole view with edited order items
-            // This try block is to see if the updateOrderView is the one that is fucking up
-            /*
-             try
-            {
-                UpdateOrderView(orders.Where(o => !orderNumbers.Contains(o[0].OrderNumber)).Count() > 0);//Refresh whole view with edited order items
-            }
-            catch
-            {
-                throw new DatabaseChangeListeningException(" It failed to update the changes from the database. Either check the orders or the _orders or maybe the " +
-                                        "UpdateViewer failed");
-            }
-             */
+
         }
         async Task UpdateDatabase(OrderItem order)
         {

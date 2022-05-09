@@ -17,9 +17,12 @@ namespace RdKitchenApp.Helpers
         public static SimpleTcpClient client = null;
         public static ServerConnect serverConnectPage;
         public static ReconnectingPopup reconnectingPopup;
+        public static ForcedToLogoutPopup forcedToLogout;
+
         private static object deserializeAs = new List<List<OrderItem>>();
 
-        // This is so we store the ip of the server if found and ONLY in the even that if constantly fails to connect to the server even if it is there.
+        // This is so we store the ip of the server if found and user it ONLY if its constantly failing to connect to the server even if it is there.
+        // There is already logic to accomodate that 'exceptional' situation
         private static string _ip { get; set; }
 
         private static float elapsedTime_2 = 0;
@@ -98,13 +101,13 @@ namespace RdKitchenApp.Helpers
             }
             catch
             {
+                // NOTE: I'm assuming if you don't specify the exception you will only catch .NET exceptions
                 return false;
             }
 
             return true;
         }
         public static bool Client_IsConnected()=> client.IsConnected;
-
         public async static Task CreateClient()
         {
             // NOTE: We can't have this property not be a nullable type cause it will cause an exception. So if we switch this type, please set it to be nullable
@@ -220,11 +223,42 @@ namespace RdKitchenApp.Helpers
 
                 client.Send(requestString);
 
+                //NOTE: This is to check if it is a get request. If not, it shouldn't try to get//update the awaitresponse
                 // @Yewo: Shouldn't this be a good place to throw an exception or something cause simply throwing the expected this isn't helpful
                 if (requestMethod != RequestObject.requestMethod.Get)
-                    return new List<List<OrderItem>>();                
+                    // UPDATE: @Yewo I made it return null instead
+                    return null;
+                //return new List<List<OrderItem>>();                
 
-                //await response
+                try
+                {
+                    await Checkawaitresponse();
+                }
+                catch (FailedtoRetrieveResponse FailedtoRetrieveResponse)
+                {
+                    // TODO: Add handling here
+                    throw FailedtoRetrieveResponse;
+                }
+               
+
+                return (List<List<OrderItem>>)awaitresponse;
+            }
+
+            Reconnect();
+            // Since its not connected to the server 
+            throw new NotConnectedToServerException("You aren't connected to the server");
+            // UPDATE: I replaced it with the exception instead of just throwing null. There is no use of it being just an ambigous null
+            //return null;
+        }
+
+        // REFACTOR: Here it is possible that we get into a stack overflow cause it will take too long to actually get those awaitresponse changes
+        // so we have to have a try block or an if statement to check if it is even possible to get the awaitresponse or if we have tried too many times to
+        //await a response
+        // This method was extracted from Sendrequest()
+        private static async Task Checkawaitresponse()
+        {
+            try
+            {
                 awaitresponse = null; // Set the state as undetermined
 
                 // awaitresponse is flipped by DataRecieved event
@@ -233,14 +267,21 @@ namespace RdKitchenApp.Helpers
                     await Task.Delay(25);
                 }
 
-                return (List<List<OrderItem>>)awaitresponse;
+                // We will have to use this for the logic we create when trying to limit the amount of awaitresponse waiting period or exceptions that could happen
+                // This is for when the await response is still null 
+
+                // if( awaitresponse is still null)
+                //throw new FailedtoRetrieveResponse("Failed to get the awaitresponse after trying to send the request and so it came up null");
             }
-
-            Reconnect();
-
-            return null;
+            catch (StackOverflowException StackOverflowException)
+            {
+                throw new FailedtoRetrieveResponse("Failed to get the awaitresponse after trying to send the request for too long", StackOverflowException);
+            }
         }
-        // REFACTOR: This method to similar to the previous one. Consider using a base method or a generic type defined for both types eg. where T is List<OrderItem>, Appuser
+
+        // REFACTOR: This method to similar to the Other SendRequest. Consider using a base method or a generic type defined for both types eg. where T is List<OrderItem>, Appuser
+        // We are even encountering a possible error here cause we have logic that has to compensate of the situation that the request is not a get request. When we don't need to
+        // return anything whatsoever in everyother case
         public async static Task<List<AppUser>> SendRequest(string fPath, RequestObject.requestMethod requestMethod)
         {
             if (client.IsConnected)
@@ -263,12 +304,15 @@ namespace RdKitchenApp.Helpers
                 if (requestMethod != RequestObject.requestMethod.Get)
                     return new List<AppUser>();
 
-                //await response
-                awaitresponse = null; // Set the state as undetermined
-
-                while (awaitresponse == null)
+                // NOTE: Logic was extracted from here
+                try
                 {
-                    await Task.Delay(25);
+                    await Checkawaitresponse();
+                }
+                catch (FailedtoRetrieveResponse FailedtoRetrieveResponse)
+                {
+                    // TODO: Add handling here same as line 239
+                    throw FailedtoRetrieveResponse;
                 }
 
                 return (List<AppUser>)awaitresponse;
@@ -281,7 +325,30 @@ namespace RdKitchenApp.Helpers
         private static void Action()
         {
             Refresh_Action();
-            DataReceived_Action();
+            //Tries DataRecieved_Action in case we got the wrong type moving forward
+            try
+            {
+                DataReceived_Action();
+            }
+            catch (UnexpectedDeserializableObject unexpectedDeserializableObject)
+            {
+                //I'm thinking it should try to find out if there is someone logged in. If there is someone logged in, it should assume that the data being recieved is an orderItem
+                //Then just have it follow through with that
+                if (LocalStorage.Chef == null)
+                {
+                    forcedToLogout = forcedToLogout == null ? new ForcedToLogoutPopup() : forcedToLogout;
+                    forcedToLogout.DisplayMessageAlert();
+                    // I'm assuming there is alot that needs to be done as you login for things not to break so I want to stop whatever is happening here and start afresh
+                    // hence the use of the return keyword
+                    return;
+                }
+                else
+                {
+                    deserializeAs = new List<List<OrderItem>>();
+                }
+                DataReceived_Action();
+                throw unexpectedDeserializableObject;
+            }
             Disconnect_Action();
         }
         private static void Disconnect_Action()
@@ -297,7 +364,6 @@ namespace RdKitchenApp.Helpers
                 Reconnect();
             }
         }
-       
         private async static void DataReceived_Action()
         {
             if (startCounting_1)
@@ -311,25 +377,16 @@ namespace RdKitchenApp.Helpers
                 // NOTE: This try block is to test if the deserializeAs is the expected type it is supposed to be.
                 // Cause maybe we are expecting an OrderItem, but we are still getting it as an AppUser
                 // @Yewo: What do you think, let's uncomment this baby. or you know, we can just go into development and do it there
-                /*
-                  try
-                {
-                    if (deserializeAs is List<List<OrderItem>>)
-                        awaitresponse = await (Encoding.UTF8.GetBytes(receivedData)).FromByteArray<List<List<OrderItem>>>();
 
-                    if (deserializeAs is List<AppUser>)
-                        awaitresponse = await (Encoding.UTF8.GetBytes(receivedData)).FromByteArray<List<AppUser>>();
-                }
-                catch
-                {
-                    throw new UnexpectedDeserializableObject("The deserialize object did not come as a List<List<OrderItem>> || List<AppUser>");
-                }
-                 */
                 if (deserializeAs is List<List<OrderItem>>)
                     awaitresponse = await (Encoding.UTF8.GetBytes(receivedData)).FromByteArray<List<List<OrderItem>>>();
 
                 if (deserializeAs is List<AppUser>)
                     awaitresponse = await (Encoding.UTF8.GetBytes(receivedData)).FromByteArray<List<AppUser>>();
+
+                // If it is neither of the above, you should throw this exception
+                if (!(deserializeAs is List<List<OrderItem>> || deserializeAs is List<AppUser>))
+                    throw new UnexpectedDeserializableObject("The deserialize object did not come as a List<List<OrderItem>> || List<AppUser>");
 
                 receivedData = "";
                 processingRequest = false;
@@ -344,6 +401,7 @@ namespace RdKitchenApp.Helpers
                             return;
                         }
 
+                        // @Yewo: Why are we waiting 500 seconds here
                         await Task.Delay(delaySeconds * 500);//Was 1000
                     }
                 }
@@ -361,39 +419,12 @@ namespace RdKitchenApp.Helpers
                 startCounting = false;
                 elapsedTime = 0;
 
-                try
-                {
-                    KitchenApp.Instance.DatabaseChangeListenerUpdate();
-                }
-                // TODO: @Abel please do the exception handling of the below situations
-
-                // @Yewo: The following blocks are so we can find out why the tablet acts out when it is trying to update menu orders as mentioned in my experience of the bug
-                // For a reminder this is what happens:
-                //// Encountered that same bug where the tablet doesn't update, then I log out and log back in and it takes forever to log back in
-                //   Logged in and it finnally worked but there are now double orders
-                //   I think it some how remebered in local but didn't show, and when it finnally synced up, it pulled from the POS itself
-                //   It resolved itself when you try to update one of the duplicates
-                //   But now when I hit confirm collection its taking spans to load
-                //   The loading stopped immeditely I made a new order, but they come up as double orders as well
-                //   Tried to update new order, takes forever to process request
-
                 // NOTE: its necessary to have the KitchenApp called cause we want the Viewer to be updated everytime we refresh anyways
-                
-                catch (UnexpectedDeserializableObject unexpectedDeserializableObject)
-                {
-                    // Here would be were some error handling would go but I haven't really thought of how to remedy it.
-                    // like say they get the wrong type. I only really want the user to know that this happened and log it
-                    // Go to the exceptions definition for an understanding of what this should do
-                    throw unexpectedDeserializableObject;
-                }
-                catch (DatabaseChangeListeningException dbChangedListeningException)
-                {
-                    // I only really expect this to log that this happened. Not that there is any solution I can think of here
-                    throw dbChangedListeningException;
-                }
-                // UPDATE: This is where your initial catch statement was. I don't expect the previous two expections to be caught cause I commented out where they were
-                // thrown. Which means the only block that will fire is this catch block. But if your catch blocks are empty then the try keyword as a whole is reduntant
-                catch { return; }
+                KitchenApp.Instance.DatabaseChangeListenerUpdate();
+
+                // UPDATE: This is where your initial catch statement was.
+                // The exception handling is now done within the method. Also if your catch blocks are empty then all they do is catch .NET exceptions
+                // And there is no problem with that.
                  
             }
         }
@@ -416,7 +447,7 @@ namespace RdKitchenApp.Helpers
             if (reconnectingPopup != null)
                 return;
 
-            // TODO: Show Popup
+           // This shows Popup
             reconnectingPopup = reconnectingPopup == null ? new ReconnectingPopup() : reconnectingPopup;          
         }
     }
