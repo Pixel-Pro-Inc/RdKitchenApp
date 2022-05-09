@@ -325,6 +325,8 @@ namespace RdKitchenApp.Helpers
                 // Essentially this is to check if a current value of awaitresponse has NOT been changed, it should use a null value instead
                 if (processingRequest)
                 {
+                    // REFACTOR: Consider simply adding old and new value properties and logic to track what is going on here. 
+                    // Basically compare recievedData to the new one each time, or some variation of this
                     awaitresponse = null; // Set the state as undetermined
                 }
 
