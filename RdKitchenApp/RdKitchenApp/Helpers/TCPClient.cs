@@ -31,8 +31,10 @@ namespace RdKitchenApp.Helpers
         // these are used mostly in Events_DataRecieved
         static int numRetries = 10;
         static int delaySeconds = 2;
+        // This is a bool that will essentially check if the awaitresponse variable has NOT been changed to the new one recieved.
         static bool processingRequest;
 
+        // REFACTOR: Consider just replacing these four lines with logic that reuses proccessingRequest
         // For refresh
         private static float elapsedTime = 0;
         private static bool startCounting = false;
@@ -59,6 +61,7 @@ namespace RdKitchenApp.Helpers
             {
                 for (int i = 0; i < numRetries; i++)
                 {
+                    // Checks if the awaitresponse has been changed. If it has been changed it should look for the new one
                     if (!processingRequest)
                     {
                         Refresh_UI();
@@ -76,6 +79,7 @@ namespace RdKitchenApp.Helpers
 
             for (int i = 0; i < numRetries; i++)
             {
+                // Checks if the awaitresponse has been changed. If it has been changed but it also newer data has now come in it means its trying to finish processing the request
                 if (!processingRequest || receivedData[0] != '[')
                 {
                     DataReceived(receivedData);//There is a data limit for every packet once exceeded is sent in another packet
@@ -204,6 +208,8 @@ namespace RdKitchenApp.Helpers
         // @Yewo: We don't use block here, so can we remove it?
         static int block = 0;
 
+        #region SendRequest
+
         public async static Task<List<List<OrderItem>>> SendRequest(object data, string fPath, RequestObject.requestMethod requestMethod)
         {
             if (client.IsConnected)
@@ -232,14 +238,18 @@ namespace RdKitchenApp.Helpers
 
                 try
                 {
+                    // @Yewo: I changed it from being an infinite loop until blocked
                     await Checkawaitresponse();
                 }
                 catch (FailedtoRetrieveResponse FailedtoRetrieveResponse)
                 {
-                    // TODO: Add handling here
+                    // If it failed to get a response it should try to send once again. If it isn't connected there will be expections that handle that
+                    // If it gets caught in an overflow, I can't really help there. It will crash the system naturally. I could have all the send request be overrides of
+                    //a single method and then wrap that in a try block and then have that wrapped in a single SendRequestPrime() method. But that might be overkill
+                    client.Send(requestString);
                     throw FailedtoRetrieveResponse;
                 }
-               
+
 
                 return (List<List<OrderItem>>)awaitresponse;
             }
@@ -250,35 +260,6 @@ namespace RdKitchenApp.Helpers
             // UPDATE: I replaced it with the exception instead of just throwing null. There is no use of it being just an ambigous null
             //return null;
         }
-
-        // REFACTOR: Here it is possible that we get into a stack overflow cause it will take too long to actually get those awaitresponse changes
-        // so we have to have a try block or an if statement to check if it is even possible to get the awaitresponse or if we have tried too many times to
-        //await a response
-        // This method was extracted from Sendrequest()
-        private static async Task Checkawaitresponse()
-        {
-            try
-            {
-                awaitresponse = null; // Set the state as undetermined
-
-                // awaitresponse is flipped by DataRecieved event
-                while (awaitresponse == null)
-                {
-                    await Task.Delay(25);
-                }
-
-                // We will have to use this for the logic we create when trying to limit the amount of awaitresponse waiting period or exceptions that could happen
-                // This is for when the await response is still null 
-
-                // if( awaitresponse is still null)
-                //throw new FailedtoRetrieveResponse("Failed to get the awaitresponse after trying to send the request and so it came up null");
-            }
-            catch (StackOverflowException StackOverflowException)
-            {
-                throw new FailedtoRetrieveResponse("Failed to get the awaitresponse after trying to send the request for too long", StackOverflowException);
-            }
-        }
-
         // REFACTOR: This method to similar to the Other SendRequest. Consider using a base method or a generic type defined for both types eg. where T is List<OrderItem>, Appuser
         // We are even encountering a possible error here cause we have logic that has to compensate of the situation that the request is not a get request. When we don't need to
         // return anything whatsoever in everyother case
@@ -307,11 +288,15 @@ namespace RdKitchenApp.Helpers
                 // NOTE: Logic was extracted from here
                 try
                 {
+                    // @Yewo: I changed it from being an infinite loop until blocked
                     await Checkawaitresponse();
                 }
                 catch (FailedtoRetrieveResponse FailedtoRetrieveResponse)
                 {
-                    // TODO: Add handling here same as line 239
+                    // If it failed to get a response it should try to send once again. If it isn't connected there will be expections that handle that
+                    // If it gets caught in an overflow, I can't really help there. It will crash the system naturally. I could have all the send request be overrides of
+                    //a single method and then wrap that in a try block and then have that wrapped in a single SendRequestPrime() method. But that might be overkill
+                    client.Send(requestString);
                     throw FailedtoRetrieveResponse;
                 }
 
@@ -322,6 +307,55 @@ namespace RdKitchenApp.Helpers
 
             return null;
         }
+        // REFACTOR: Here it is possible that we get into a stack overflow cause it will take too long to actually get those awaitresponse changes
+        // UPDATE: @Yewo, I set out to remove the overflow. But the draw back is will only check for 5 seconds but aleast it will try 20 times
+        // This method was extracted from Sendrequest()
+        private static async Task Checkawaitresponse()
+        {
+            int delay = 25;
+            int awaitNumberofRetries = numRetries * 20 * delay; // 25*20 is 500, 500 times 10 retries to get five seconds and we want to attempt it 20 times
+            // So that we know how long it was waiting for and it will be mentioned in the exception
+            int millisecondsWaited = awaitNumberofRetries;
+            try
+            {
+                // REFACTOR: This is the most faulty line. What if the awaitresponse already came through
+                // UPDATE: I made it check if it is still processing request. The moment its not processing, the bool is flipped and awaitresponse is given a value
+                // check DataRecieved() line 397 for more context
+                // This is to ensure that it will only set awaitresponse to null BEFORE data is recieved
+                // Essentially this is to check if a current value of awaitresponse has NOT been changed, it should use a null value instead
+                if (processingRequest)
+                {
+                    awaitresponse = null; // Set the state as undetermined
+                }
+
+
+                // awaitresponse is flipped by DataRecieved event
+                while (awaitresponse == null)
+                {
+                    await Task.Delay(delay);
+                    // removes the delay time from the total 5 seconds we want it to wait for and its multiplied by 10 so that it only removes 20 times
+                    awaitNumberofRetries -= delay * 10;
+
+                    // Gets out of the while loop if the time has elapsed
+                    if (awaitNumberofRetries == 0) break;
+                }
+
+                // if the awaitresponse is still null
+                if (awaitresponse == null)
+                    throw new FailedtoRetrieveResponse($"Failed to get the awaitresponse variable after {millisecondsWaited} milliseconds was waited, trying to get the response from " +
+                        $"the request sent, and it still came up null");
+
+            }
+            // Now that we put limits in the try block I don't expect this catch block to find an overflow
+            catch (StackOverflowException StackOverflowException)
+            {
+                throw new FailedtoRetrieveResponse("Failed to get the awaitresponse after trying to send the request for too long", StackOverflowException);
+            }
+        }
+
+        #endregion
+
+
         private static void Action()
         {
             Refresh_Action();
@@ -366,23 +400,27 @@ namespace RdKitchenApp.Helpers
         }
         private async static void DataReceived_Action()
         {
+            // @Yewo: Why not just replaced this elasped time thingy with the same DataRecieved, except it should return a bool.
             if (startCounting_1)
-                elapsedTime_1++;
+                elapsedTime_1++;// it was 0
 
-            if (elapsedTime_1 > 0)//Was 1
+            if (elapsedTime_1 > 0)//it was 1
             {
                 startCounting_1 = false;
                 elapsedTime_1 = 0;
 
-                // NOTE: This try block is to test if the deserializeAs is the expected type it is supposed to be.
-                // Cause maybe we are expecting an OrderItem, but we are still getting it as an AppUser
-                // @Yewo: What do you think, let's uncomment this baby. or you know, we can just go into development and do it there
+                //Checks if processing is still happening cause we use this bool when we want to set the awaitresponse in Checkawaitresponse
+                // The moment it finds that it is still processing it flips the bool to state that it has finised processing and the awaitresponse is given a value
+                // Essentially this is to check if a current value of awaitresponse has NOT been changed, it should set in the new one
+                if (processingRequest)
+                {
+                    processingRequest = false;
+                    if (deserializeAs is List<List<OrderItem>>)
+                        awaitresponse = await (Encoding.UTF8.GetBytes(receivedData)).FromByteArray<List<List<OrderItem>>>();
 
-                if (deserializeAs is List<List<OrderItem>>)
-                    awaitresponse = await (Encoding.UTF8.GetBytes(receivedData)).FromByteArray<List<List<OrderItem>>>();
-
-                if (deserializeAs is List<AppUser>)
-                    awaitresponse = await (Encoding.UTF8.GetBytes(receivedData)).FromByteArray<List<AppUser>>();
+                    if (deserializeAs is List<AppUser>)
+                        awaitresponse = await (Encoding.UTF8.GetBytes(receivedData)).FromByteArray<List<AppUser>>();
+                }
 
                 // If it is neither of the above, you should throw this exception
                 if (!(deserializeAs is List<List<OrderItem>> || deserializeAs is List<AppUser>))
@@ -395,6 +433,7 @@ namespace RdKitchenApp.Helpers
                 {
                     for (int i = 0; i < numRetries; i++)
                     {
+                        // I'm assuming this is to check if a current value of awaitresponse has been found, it should check for a new one
                         if (!processingRequest)
                         {
                             Refresh_UI();
@@ -407,7 +446,6 @@ namespace RdKitchenApp.Helpers
                 }
             }
         }
-
         // REFACTOR: Consider making a delegate or finding a timer delegate and have DatabaseChangeListenerUpdate() become an event that will subscribe to it.
         private static void Refresh_Action()
         {
@@ -428,7 +466,6 @@ namespace RdKitchenApp.Helpers
                  
             }
         }
-       
         private static void Refresh_UI()
         {
             startCounting = true;
@@ -450,5 +487,6 @@ namespace RdKitchenApp.Helpers
            // This shows Popup
             reconnectingPopup = reconnectingPopup == null ? new ReconnectingPopup() : reconnectingPopup;          
         }
+
     }
 }

@@ -14,7 +14,6 @@ namespace RdKitchenApp
     [XamlCompilation(XamlCompilationOptions.Compile)]
     public partial class ForcedToLogoutPopup : PopupPage
     {
-        // GITRACK: I moved the location of all the pages, but didn't change the files namespace . If we get errors that might be a reasonable cause
         public ForcedToLogoutPopup()
         {
             InitializeComponent();
