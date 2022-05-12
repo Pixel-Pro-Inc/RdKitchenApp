@@ -44,7 +44,6 @@ namespace RdKitchenApp
                 // NOTE: Remember, always throw the exception you just caught
                 Console.WriteLine($"If it gets to this point that means we don't know why its hasn't connected, the error is {0}" +
                    "But this was thrown when reconnecting", FailedToConnectToServerException.Message);
-                throw FailedToConnectToServerException;
             }
         }
         //This is the only place where we know it will be connected. Everywhere else it hasn't.
@@ -64,7 +63,6 @@ namespace RdKitchenApp
             {
                 Console.WriteLine($"If it gets to this point that means we don't know why its hasn't connected, the error is {0}" +
                     "But this was thrown when reconnecting", FailedToConnectToServerException.Message);
-                throw FailedToConnectToServerException;
             }
         }
         #region View

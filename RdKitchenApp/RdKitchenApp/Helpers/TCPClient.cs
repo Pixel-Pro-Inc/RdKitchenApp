@@ -16,7 +16,7 @@ namespace RdKitchenApp.Helpers
     {
         public static SimpleTcpClient client = null;
         public static ServerConnect serverConnectPage;
-        public static ReconnectingPopup reconnectingPopup;
+        public static ReconnectingPopup reconnectingPopup;  
         public static ForcedToLogoutPopup forcedToLogout;
 
         private static object deserializeAs = new List<List<OrderItem>>();
@@ -129,7 +129,6 @@ namespace RdKitchenApp.Helpers
             {
                 // This is so if it continues to fail, a Hail Mary will be to used, an ip stored
                 ip = _ip;
-                throw FailedToConnectToServerException;
             }
 
             #endregion
@@ -182,7 +181,6 @@ namespace RdKitchenApp.Helpers
             {
                 Console.WriteLine($"If it gets to this point that means we don't know why its hasn't connected, the error is {0}" +
                     "But this was thrown when connecting to the server for the first time", FailedToConnectToServerException.Message);
-                throw FailedToConnectToServerException;
             }
 
             #endregion
@@ -241,13 +239,14 @@ namespace RdKitchenApp.Helpers
                     // @Yewo: I changed it from being an infinite loop until blocked
                     await Checkawaitresponse();
                 }
-                catch (FailedtoRetrieveResponse FailedtoRetrieveResponse)
+                catch (FailedtoRetrieveResponse)
                 {
                     // If it failed to get a response it should try to send once again. If it isn't connected there will be expections that handle that
                     // If it gets caught in an overflow, I can't really help there. It will crash the system naturally. I could have all the send request be overrides of
                     //a single method and then wrap that in a try block and then have that wrapped in a single SendRequestPrime() method. But that might be overkill
+                    // UPDATE: Instead of calling the static method again, I want to just recall the functionality that we are trying to use
                     client.Send(requestString);
-                    throw FailedtoRetrieveResponse;
+                    await Checkawaitresponse();
                 }
 
 
@@ -291,13 +290,16 @@ namespace RdKitchenApp.Helpers
                     // @Yewo: I changed it from being an infinite loop until blocked
                     await Checkawaitresponse();
                 }
-                catch (FailedtoRetrieveResponse FailedtoRetrieveResponse)
+                catch (FailedtoRetrieveResponse)
                 {
                     // If it failed to get a response it should try to send once again. If it isn't connected there will be expections that handle that
-                    // If it gets caught in an overflow, I can't really help there. It will crash the system naturally. I could have all the send request be overrides of
+                    // If it gets caught in an overflow, it gets caught in the checkawaitresponse method (hopefully). I could have all the send request be overrides of
                     //a single method and then wrap that in a try block and then have that wrapped in a single SendRequestPrime() method. But that might be overkill
+
+                    // UPDATE: Instead of calling the static method again, I want to just recall the functionality that we are trying to use
                     client.Send(requestString);
-                    throw FailedtoRetrieveResponse;
+                    await Checkawaitresponse();
+                    // UPDATE: We remove all the throws of the exception variables cause we don't actually need to do that
                 }
 
                 return (List<AppUser>)awaitresponse;
@@ -334,9 +336,12 @@ namespace RdKitchenApp.Helpers
                 // awaitresponse is flipped by DataRecieved event
                 while (awaitresponse == null)
                 {
+                    
                     await Task.Delay(delay);
-                    // removes the delay time from the total 5 seconds we want it to wait for and its multiplied by 10 so that it only removes 20 times
-                    awaitNumberofRetries -= delay * 10;
+                    // removes the delay time from the total 5 seconds we want it to wait for and its multiplied by 10 so that it only removes 20 times 
+                    // UPDATE: it shold run 200 times
+                    // @Abel: remove the 250, so remove the 10
+                    awaitNumberofRetries -= delay;
 
                     // Gets out of the while loop if the time has elapsed
                     if (awaitNumberofRetries == 0) break;
@@ -366,7 +371,7 @@ namespace RdKitchenApp.Helpers
             {
                 DataReceived_Action();
             }
-            catch (UnexpectedDeserializableObject unexpectedDeserializableObject)
+            catch (UnexpectedDeserializableObject)
             {
                 //I'm thinking it should try to find out if there is someone logged in. If there is someone logged in, it should assume that the data being recieved is an orderItem
                 //Then just have it follow through with that
@@ -383,7 +388,6 @@ namespace RdKitchenApp.Helpers
                     deserializeAs = new List<List<OrderItem>>();
                 }
                 DataReceived_Action();
-                throw unexpectedDeserializableObject;
             }
             Disconnect_Action();
         }

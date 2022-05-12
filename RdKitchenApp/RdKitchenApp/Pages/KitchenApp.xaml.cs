@@ -94,17 +94,15 @@ namespace RdKitchenApp
                 orders = await DataContext.Instance.GetOrders();
             }
             // We have the two catch blocks here cause there isn't a way to put them in the same block but we need both explicitly mentioned cause we need to know what happened
-            catch (FailedToConnectToServerException FailedToConnectToServerException)
+            catch (FailedToConnectToServerException)
             {
                 //This ensures the orders don't come in as null
                 orders = orders == null ? new List<List<OrderItem>>() : orders;
-                throw FailedToConnectToServerException;
             }
-            catch (NotConnectedToServerException NotConnectedToServerException)
+            catch (NotConnectedToServerException)
             {
                 //This ensures the orders don't come in as null
                 orders = orders == null ? new List<List<OrderItem>>() : orders;
-                throw NotConnectedToServerException;
             }
 
             // It is possible for there to be null orders. But we don't want them. There is handling to make sure, but in case they don't catch it this is here
@@ -183,7 +181,7 @@ namespace RdKitchenApp
         }
         public async void DatabaseChangeListenerUpdate()
         {
-            List<string> orderNumbers;//List of OrderNumbers Stored Locally
+            List<string> orderNumbers=new List<string>();//List of OrderNumbers Stored Locally
 
             List<List<OrderItem>> orders;//Call For Orders From Server
 
@@ -192,11 +190,10 @@ namespace RdKitchenApp
             {
                  orderNumbers = GetOrderNumbers(_orders);//List of OrderNumbers Stored Locally
             }
-            catch(NullOrderException NullOrderException)
+            catch(NullOrderException)
             {
                 // We know that eventually something gets passed out in GetOrderItems() so we use it to set the _orders in the even that they are null.
                 _orders = await GetOrderItems(); 
-                throw NullOrderException;
             }
             catch // This is here cause Yewo had something similiar, and it serves to catch .NET exceptions
             { return; }
