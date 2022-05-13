@@ -745,7 +745,8 @@ foreach (var order in orderViewer.Children)
 
             try
             {
-                await client.PostAsync("https://rodizioexpress.com/api/sms/send/complete/" + phoneNumber + "/" + orderNumber, null);
+                if (!string.IsNullOrEmpty(phoneNumber))
+                    await client.PostAsync("https://rodizioexpress.com/api/sms/send/complete/" + phoneNumber + "/" + orderNumber, null);
             }
             catch
             {
