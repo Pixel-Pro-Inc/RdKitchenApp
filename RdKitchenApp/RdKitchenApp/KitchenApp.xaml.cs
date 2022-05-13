@@ -1,4 +1,5 @@
 ﻿using RdKitchenApp.Entities;
+using RdKitchenApp.Exceptions;
 using RdKitchenApp.Helpers;
 using RdKitchenApp.Interfaces;
 using Rg.Plugins.Popup.Services;
@@ -53,7 +54,7 @@ namespace RdKitchenApp
             _orders = orders;
 
             bool skip = false;
-
+            // @Yewo: I kinda need you explain what you are trying to do here specifically
             for (int i = 0; i < orders.Count; i++)
             {
                 int count = 0;
@@ -84,6 +85,7 @@ namespace RdKitchenApp
 
             if (newOrders)
                 DependencyService.Get<INotification>().CreateNotification();
+
         }        
 
         public async void DatabaseChangeListenerUpdate()
@@ -92,6 +94,23 @@ namespace RdKitchenApp
             
             List<List<OrderItem>> orders = await GetOrderItems();//Call For Orders From Server
 
+            // This try block is to see if it fails to get the data it needs
+            /*
+             try
+            {
+                List<string> orderNumbers = GetOrderNumbers(_orders);//List of OrderNumbers Stored Locally
+
+                List<List<OrderItem>> orders = await GetOrderItems();//Call For Orders From Server
+            }
+            catch
+            {
+                throw new DatabaseChangeListeningException(" It failed to update the changes from the database. Either check the orders or the _orders or maybe the " +
+                                        "UpdateViewer failed");
+            }
+             */
+
+
+            // @Yewo: why are you overwriting the data you just got locally with the Server data?
             _orders = orders;
             #region collapse
             /*if (orders.Where(o => !orderNumbers.Contains(o[0].OrderNumber)).Count() > 0)//If new items exist add to bottom of list
@@ -184,7 +203,22 @@ foreach (var order in orderViewer.Children)
                 processingPopUp.Close();
 
             UpdateOrderView(orders.Where(o => !orderNumbers.Contains(o[0].OrderNumber)).Count() > 0);//Refresh whole view with edited order items
+            // This try block is to see if the updateOrderView is the one that is fucking up
+            /*
+             try
+            {
+                UpdateOrderView(orders.Where(o => !orderNumbers.Contains(o[0].OrderNumber)).Count() > 0);//Refresh whole view with edited order items
+            }
+            catch
+            {
+                throw new DatabaseChangeListeningException(" It failed to update the changes from the database. Either check the orders or the _orders or maybe the " +
+                                        "UpdateViewer failed");
+            }
+             */
         }
+
+        // @Abel: Look down
+        // TRACK: This is the last place that I was
         private void ResetBindings()
         {
             int count = 0;

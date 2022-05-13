@@ -7,6 +7,7 @@ using static RdKitchenApp.Entities.Enums;
 
 namespace RdKitchenApp.Helpers
 {
+    // @Yewo: Is there a particular reason why you wanted to abstract the LANDatacontext from the norml Datacontext?
     public static class LANDataContext
     {
         public async static void StoreData(Directories path, object data)
