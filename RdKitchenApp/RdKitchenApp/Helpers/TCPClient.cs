@@ -463,8 +463,17 @@ namespace RdKitchenApp.Helpers
                 startCounting = false;
                 elapsedTime = 0;
 
+                //@Abel: I had a try catch block here because without it an exception would occur which was fine just wanted it not to crash the app
+                //Please try run the app without a try catch and see what happens
                 // NOTE: its necessary to have the KitchenApp called cause we want the Viewer to be updated everytime we refresh anyways
-                KitchenApp.Instance.DatabaseChangeListenerUpdate();
+                try
+                {
+                    KitchenApp.Instance.DatabaseChangeListenerUpdate();
+                }
+                catch
+                {
+                    ;
+                }
 
                 // UPDATE: This is where your initial catch statement was.
                 // The exception handling is now done within the method. Also if your catch blocks are empty then all they do is catch .NET exceptions
