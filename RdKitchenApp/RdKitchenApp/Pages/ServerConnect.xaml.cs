@@ -1,4 +1,5 @@
-﻿using RdKitchenApp.Helpers;
+﻿using RdKitchenApp.Exceptions;
+using RdKitchenApp.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,19 +28,25 @@ namespace RdKitchenApp
 
         public async Task ConnectToServer()
         {
-            await Task.Delay(5000);
-            TCPClient.serverConnectPage = this;
+            try
+            {
+                await Task.Delay(5000);
+                TCPClient.serverConnectPage = this;
 
-            await TCPClient.CreateClient();
+                await TCPClient.CreateClient();
+            }
+            catch
+            {
+                throw new FailedToConnectToServerException("Make sure you are connected to a Local Area Connection." +
+                    " You do not need to have internet access but you need a network connection. You can also try restarting the tablet.");
+            }
         }
         public async void DisplayMessageAlert(string msg)
         {
             await DisplayAlert("Alert", msg, "Ok");
         }
 
-        public void Connected()
-        {
-            Application.Current.MainPage = new NavigationPage(new Login());
-        }
+        public void Connected()=> Application.Current.MainPage = new NavigationPage(new Login());
+
     }
 }
