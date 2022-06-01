@@ -88,6 +88,7 @@ namespace RdKitchenApp.Helpers
         }
 
         static object awaitresponse = null;
+        public static float retryInterval = 5000f;
         public async static Task<List<List<OrderItem>>> SendRequest(object data, string fPath, RequestObject.requestMethod requestMethod)
         {
             if (client.IsConnected)
@@ -112,10 +113,18 @@ namespace RdKitchenApp.Helpers
 
                 //await response
                 awaitresponse = null; // Set the state as undetermined
+                float timeElapsed = 0;
 
                 while (awaitresponse == null)
                 {
                     await Task.Delay(25);
+                    timeElapsed += 25;
+
+                    if(timeElapsed > retryInterval)
+                    {
+                        timeElapsed = 0;
+                        client.Send(requestString);
+                    }
                 }
 
                 return (List<List<OrderItem>>)awaitresponse;
@@ -151,9 +160,18 @@ namespace RdKitchenApp.Helpers
                 //await response
                 awaitresponse = null; // Set the state as undetermined
 
+                float timeElapsed = 0;
+
                 while (awaitresponse == null)
                 {
                     await Task.Delay(25);
+                    timeElapsed += 25;
+
+                    if (timeElapsed > retryInterval)
+                    {
+                        timeElapsed = 0;
+                        client.Send(requestString);
+                    }
                 }
 
                 return (List<AppUser>)awaitresponse;
