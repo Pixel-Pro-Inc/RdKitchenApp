@@ -206,8 +206,8 @@ namespace RdKitchenApp.Helpers
         // @Yewo: We don't use block here, so can we remove it?
         static int block = 0;
 
-        #region SendRequest
-
+        static object awaitresponse = null;
+        public static float retryInterval = 5000f;
         public async static Task<List<List<OrderItem>>> SendRequest(object data, string fPath, RequestObject.requestMethod requestMethod)
         {
             if (client.IsConnected)
@@ -234,19 +234,20 @@ namespace RdKitchenApp.Helpers
                     return null;
                 //return new List<List<OrderItem>>();                
 
-                try
+                //await response
+                awaitresponse = null; // Set the state as undetermined
+                float timeElapsed = 0;
+
+                while (awaitresponse == null)
                 {
-                    // @Yewo: I changed it from being an infinite loop until blocked
-                    await Checkawaitresponse();
-                }
-                catch (FailedtoRetrieveResponse)
-                {
-                    // If it failed to get a response it should try to send once again. If it isn't connected there will be expections that handle that
-                    // If it gets caught in an overflow, I can't really help there. It will crash the system naturally. I could have all the send request be overrides of
-                    //a single method and then wrap that in a try block and then have that wrapped in a single SendRequestPrime() method. But that might be overkill
-                    // UPDATE: Instead of calling the static method again, I want to just recall the functionality that we are trying to use
-                    client.Send(requestString);
-                    await Checkawaitresponse();
+                    await Task.Delay(25);
+                    timeElapsed += 25;
+
+                    if(timeElapsed > retryInterval)
+                    {
+                        timeElapsed = 0;
+                        client.Send(requestString);
+                    }
                 }
 
 
@@ -284,22 +285,21 @@ namespace RdKitchenApp.Helpers
                 if (requestMethod != RequestObject.requestMethod.Get)
                     return new List<AppUser>();
 
-                // NOTE: Logic was extracted from here
-                try
-                {
-                    // @Yewo: I changed it from being an infinite loop until blocked
-                    await Checkawaitresponse();
-                }
-                catch (FailedtoRetrieveResponse)
-                {
-                    // If it failed to get a response it should try to send once again. If it isn't connected there will be expections that handle that
-                    // If it gets caught in an overflow, it gets caught in the checkawaitresponse method (hopefully). I could have all the send request be overrides of
-                    //a single method and then wrap that in a try block and then have that wrapped in a single SendRequestPrime() method. But that might be overkill
+                //await response
+                awaitresponse = null; // Set the state as undetermined
 
-                    // UPDATE: Instead of calling the static method again, I want to just recall the functionality that we are trying to use
-                    client.Send(requestString);
-                    await Checkawaitresponse();
-                    // UPDATE: We remove all the throws of the exception variables cause we don't actually need to do that
+                float timeElapsed = 0;
+
+                while (awaitresponse == null)
+                {
+                    await Task.Delay(25);
+                    timeElapsed += 25;
+
+                    if (timeElapsed > retryInterval)
+                    {
+                        timeElapsed = 0;
+                        client.Send(requestString);
+                    }
                 }
 
                 return (List<AppUser>)awaitresponse;
