@@ -205,8 +205,6 @@ namespace RdKitchenApp.Helpers
         }
         // @Yewo: We don't use block here, so can we remove it?
         static int block = 0;
-
-        static object awaitresponse = null;
         public static float retryInterval = 5000f;
         public async static Task<List<List<OrderItem>>> SendRequest(object data, string fPath, RequestObject.requestMethod requestMethod)
         {
@@ -359,9 +357,6 @@ namespace RdKitchenApp.Helpers
                 throw new FailedtoRetrieveResponse("Failed to get the awaitresponse after trying to send the request for too long", StackOverflowException);
             }
         }
-
-        #endregion
-
 
         private static void Action()
         {
