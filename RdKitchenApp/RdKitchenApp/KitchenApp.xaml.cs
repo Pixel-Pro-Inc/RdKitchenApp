@@ -71,6 +71,13 @@ namespace RdKitchenApp
                     }
                 }
 
+                var frames = orderViewer.Children;
+                foreach (var frame in frames)
+                {
+                    if (((Frame)frame).BindingContext as string == orders[i][0].OrderNumber)
+                        skip = true;
+                }
+
                 if (!skip)
                     orderViewer.Children.Add(GetFrame(orders[i], i));
             }
@@ -232,7 +239,21 @@ foreach (var order in orderViewer.Children)
         {
             List<List<OrderItem>> orders = new List<List<OrderItem>>();
 
-            orders = await DataContext.Instance.GetOrders();
+            //The following block is my attempt at removing an error
+            //Apparently at certain times the tablets duplicate orders on the view
+            //I postulate that this is due to some unexpected behaviour with our current network technology(TCP)
+            List<string> orderNumbers = new List<string>();
+            var _orders = await DataContext.Instance.GetOrders();
+            foreach (var item in _orders)
+            {
+                //if the order has not already been added to the list add it
+                if (!orderNumbers.Contains(item[0].OrderNumber))
+                {
+                    orderNumbers.Add(item[0].OrderNumber);
+                    orders.Add(item);
+                }
+            }
+            //End
 
             if (orders == null)
                 return null;
@@ -249,8 +270,9 @@ foreach (var order in orderViewer.Children)
         {
             Frame frame = new Frame()
             {
-                BackgroundColor = Color.FromHex("#343434")            
-            };
+                BackgroundColor = Color.FromHex("#343434"),
+                BindingContext = order[0].OrderNumber
+             };
 
             StackLayout stackLayout = new StackLayout();
 

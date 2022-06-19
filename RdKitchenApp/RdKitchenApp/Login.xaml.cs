@@ -1,4 +1,5 @@
-﻿using RdKitchenApp.Entities;
+﻿using Plugin.LatestVersion;
+using RdKitchenApp.Entities;
 using RdKitchenApp.Helpers;
 using System;
 using System.Collections.Generic;
@@ -22,6 +23,27 @@ namespace RdKitchenApp
             InitializeComponent();
 
             NavigationPage.SetHasNavigationBar(this, false);
+
+            //@Yewo: Please refactor this code since the plugin no longer works
+            //CheckForUpdates();
+        }
+
+        private async void CheckForUpdates()
+        {
+            var isLatest = await CrossLatestVersion.Current.IsUsingLatestVersion();
+
+            if (!isLatest) //If the user does not have the last version
+            {
+                var update = await DisplayAlert("New version available", 
+                    "There is a new version of our app. You have to update as soon as possible to not miss out on crucial changes. Would you like to update now?", 
+                    "Yes", "No");
+
+                if (update)
+                {
+                    //Open the store
+                    await CrossLatestVersion.Current.OpenAppInStore();
+                }
+            }
         }
 
         int block = 0;
