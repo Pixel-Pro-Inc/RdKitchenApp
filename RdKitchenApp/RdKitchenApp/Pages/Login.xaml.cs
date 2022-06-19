@@ -46,6 +46,8 @@ namespace RdKitchenApp
             }
         }
 
+        #region View
+
         int block = 0;
         private void Signin_Button_Clicked(object sender, EventArgs e)
         {
@@ -56,27 +58,18 @@ namespace RdKitchenApp
 
             Signin();
         }
-
-        private void Username_Entry_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            Username = GetEntryText(sender);
-        }
-
-        private void Password_Entry_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            Password = GetEntryText(sender);
-        }
-
-        private string GetEntryText(object entry)
-        {
-            return ((Entry)entry).Text;
-        }
+        private void Username_Entry_TextChanged(object sender, TextChangedEventArgs e) => Username = GetEntryText(sender);
+        private void Password_Entry_TextChanged(object sender, TextChangedEventArgs e) => Password = GetEntryText(sender);
         private async void _DisplayAlert(string message)
         {
             activity.IsVisible = false;
 
             await DisplayAlert("Error", message, "Try again");
         }
+
+        #endregion
+
+        private string GetEntryText(object entry)=> ((Entry)entry).Text;
 
         private async void Signin()
         {
@@ -139,10 +132,7 @@ namespace RdKitchenApp
             NewKitchenPage();
         }
 
-        public async void NewKitchenPage()
-        {
-            await Navigation.PushAsync(new KitchenApp());
-        }
+        public async void NewKitchenPage() => await Navigation.PushAsync(new KitchenApp());
 
         private bool PasswordMatches(AppUser user, string password)
         {
@@ -158,5 +148,6 @@ namespace RdKitchenApp
 
             return true;
         }
+
     }
 }
