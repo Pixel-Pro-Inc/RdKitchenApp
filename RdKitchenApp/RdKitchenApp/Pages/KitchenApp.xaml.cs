@@ -25,7 +25,7 @@ namespace RdKitchenApp
 
         public static KitchenApp Instance { get; set; }
         public KitchenApp()
-        {            
+        {
             InitializeComponent();
             Instance = this;
 
@@ -35,7 +35,30 @@ namespace RdKitchenApp
 
             UpdateOrderView(); //Display All Eligible Orders On Start
         }
+        List<string> GetOrderNumbers(List<List<OrderItem>> orderItems)
+        {
+            List<string> orderNumbers = new List<string>();
 
+            // I'm assuming that if Orders are passedd into this as a list we don't expect them to ever be null. Which is why I'm throwing this expection in that case
+            // but there is also the case where there are no orders but if that's the case orders will exist, but the count will be zero
+            if (orderItems == null) throw new NullOrderException("The orders given were null, they should at least be empty/ count==0",
+                new NullReferenceException("If global orders were passed in as null, we aren't supposed to have that. Never set it to null"));
+
+            // NOTE: So I'm thinking this might be a good place to have the dictionary types. Only because I think it might be easier 
+            // to do data algorithms with. Since they can work with keys and such
+            foreach (var item in orderItems)
+            {
+                foreach (var itm in item)
+                {
+                    if (!orderNumbers.Contains(itm.OrderNumber))
+                    {
+                        orderNumbers.Add(itm.OrderNumber);
+                    }
+                }
+            }
+
+            return orderNumbers;
+        }
         async void Logic(int Index, int Index1)
         {
             await UpdateDatabase(_orders[Index][Index1]);
@@ -57,69 +80,6 @@ namespace RdKitchenApp
             string orderNumber = _orders[Index][Index1].OrderNumber.Substring(_orders[Index][Index1].OrderNumber.IndexOf('_') + 1, 4);
             SendSMS(_orders[Index][Index1].PhoneNumber, orderNumber);
         }
-
-        #region Download
-
-        List<string> GetOrderNumbers(List<List<OrderItem>> orderItems)
-        {
-            List<string> orderNumbers = new List<string>();
-
-            // I'm assuming that if Orders are passedd into this as a list we don't expect them to ever be null. Which is why I'm throwing this expection in that case
-            // but there is also the case where there are no orders but if that's the case orders will exist, but the count will be zero
-            if (orderItems == null) throw new NullOrderException("The orders given were null, they should at least be empty/ count==0", 
-                new NullReferenceException("If global orders were passed in as null, we aren't supposed to have that. Never set it to null"));
-
-            // NOTE: So I'm thinking this might be a good place to have the dictionary types. Only because I think it might be easier 
-            // to do data algorithms with. Since they can work with keys and such
-            foreach (var item in orderItems)
-            {
-                foreach (var itm in item)
-                {
-                    if (!orderNumbers.Contains(itm.OrderNumber))
-                    {
-                        orderNumbers.Add(itm.OrderNumber);
-                    }
-                }
-            }
-
-            return orderNumbers;
-        }
-        async Task<List<List<OrderItem>>> GetOrderItems()
-        {
-            List<List<OrderItem>> orders = new List<List<OrderItem>>();
-
-            try
-            {
-                // Its possible for result to be set to null, for example, when the tablet is disconnected from the server. but we really don't want it to be null
-                orders = await DataContext.Instance.GetOrders();
-            }
-            // We have the two catch blocks here cause there isn't a way to put them in the same block but we need both explicitly mentioned cause we need to know what happened
-            catch (FailedToConnectToServerException)
-            {
-                //This ensures the orders don't come in as null
-                orders = orders == null ? new List<List<OrderItem>>() : orders;
-            }
-            catch (NotConnectedToServerException)
-            {
-                //This ensures the orders don't come in as null
-                orders = orders == null ? new List<List<OrderItem>>() : orders;
-            }
-
-            // It is possible for there to be null orders. But we don't want them. There is handling to make sure, but in case they don't catch it this is here
-            if (orders == null)
-                throw new NullReferenceException("Orders are never expected to be null since we have exception handling to ensure it doesn't happen ");
-
-            orders = orders.Where(o => o.Where(p => p.Fufilled).ToList().Count != o.Count).ToList();
-            orders = orders.Where(o => !o[0].MarkedForDeletion).ToList();
-
-            message.IsVisible = !(orders.Count > 0);
-
-            return orders;
-        }
-
-        #endregion
-
-        #region Update
 
         //This basically gets the orders. We need this called when we reconnect to the server. 
         public async void UpdateOrderView(bool newOrders = false)
@@ -188,19 +148,19 @@ namespace RdKitchenApp
         }
         public async void DatabaseChangeListenerUpdate()
         {
-            List<string> orderNumbers=new List<string>();//List of OrderNumbers Stored Locally
+            List<string> orderNumbers = new List<string>();//List of OrderNumbers Stored Locally
 
             List<List<OrderItem>> orders;//Call For Orders From Server
 
             // This try block is to see if it fails to get the data it needs
             try
             {
-                 orderNumbers = GetOrderNumbers(_orders);//List of OrderNumbers Stored Locally
+                orderNumbers = GetOrderNumbers(_orders);//List of OrderNumbers Stored Locally
             }
-            catch(NullOrderException)
+            catch (NullOrderException)
             {
                 // We know that eventually something gets passed out in GetOrderItems() so we use it to set the _orders in the even that they are null.
-                _orders = await GetOrderItems(); 
+                _orders = await GetOrderItems();
             }
             catch // This is here cause Yewo had something similiar, and it serves to catch .NET exceptions
             { return; }
@@ -335,6 +295,59 @@ foreach (var order in orderViewer.Children)
             orders = orders.Where(o => o.Where(p => p.Fufilled).ToList().Count != o.Count).ToList();
             orders = orders.Where(o => !o[0].MarkedForDeletion).ToList();
 
+            return orders;
+        }
+
+        List<string> sentOutSMS = new List<string>();
+        async void SendSMS(string phoneNumber, string orderNumber)
+        {
+            if (!sentOutSMS.Contains(orderNumber))
+            {
+                sentOutSMS.Add(orderNumber);
+            }
+            else
+            {
+                return;
+            }
+
+            try
+            {
+                if (!string.IsNullOrEmpty(phoneNumber))
+                    await client.PostAsync("https://rodizioexpress.com/api/sms/send/complete/" + phoneNumber + "/" + orderNumber, null);
+            }
+            catch
+            {
+                return;
+            }
+        }
+        public async void LoginPage() => await Navigation.PushAsync(new Login());//Resets back to login page
+
+        // @Yewo: What was this supposed to do?
+        private void ResetBindings()
+        {
+            int count = 0;
+            foreach (var order in orderViewer.Children)
+            {
+                //Partially Fufilled
+                Frame frame = ((Frame)order);
+                StackLayout stackLayout = (StackLayout)frame.Content;
+
+                StackLayout stackLayout_1 = (StackLayout)stackLayout.Children[1];
+
+                StackLayout stackLayout_2 = (StackLayout)stackLayout_1.Children[3];//Status Holder
+
+                for (int i = 1; i < stackLayout_2.Children.Count; i++)
+                {
+                    var checkBox = (CheckBox)(stackLayout_2.Children[i]);
+
+                    object[] orderIndexPair = { count, (i - 1) };
+
+                    checkBox.BindingContext = orderIndexPair;
+                }
+                count++;
+            }
+        }
+
         #region View Logic
 
         Frame GetFrame(List<OrderItem> order, int index)
@@ -345,7 +358,7 @@ foreach (var order in orderViewer.Children)
             {
                 BackgroundColor = Color.FromHex("#343434"),
                 BindingContext = order[0].OrderNumber
-             };
+            };
 
             StackLayout stackLayout = new StackLayout();
 
@@ -762,56 +775,5 @@ foreach (var order in orderViewer.Children)
         }
 
         #endregion
-
-        List<string> sentOutSMS = new List<string>();
-        async void SendSMS(string phoneNumber, string orderNumber)
-        {
-            if (!sentOutSMS.Contains(orderNumber))
-            {
-                sentOutSMS.Add(orderNumber);
-            }
-            else
-            {
-                return;
-            }
-
-            try
-            {
-                if (!string.IsNullOrEmpty(phoneNumber))
-                    await client.PostAsync("https://rodizioexpress.com/api/sms/send/complete/" + phoneNumber + "/" + orderNumber, null);
-            }
-            catch
-            {
-                return;
-            }
-        }
-        public async void LoginPage()=> await Navigation.PushAsync(new Login());//Resets back to login page
-
-        // @Yewo: What was this supposed to do?
-        private void ResetBindings()
-        {
-            int count = 0;
-            foreach (var order in orderViewer.Children)
-            {
-                //Partially Fufilled
-                Frame frame = ((Frame)order);
-                StackLayout stackLayout = (StackLayout)frame.Content;
-
-                StackLayout stackLayout_1 = (StackLayout)stackLayout.Children[1];
-
-                StackLayout stackLayout_2 = (StackLayout)stackLayout_1.Children[3];//Status Holder
-
-                for (int i = 1; i < stackLayout_2.Children.Count; i++)
-                {
-                    var checkBox = (CheckBox)(stackLayout_2.Children[i]);
-
-                    object[] orderIndexPair = { count, (i - 1) };
-
-                    checkBox.BindingContext = orderIndexPair;
-                }
-                count++;
-            }
-        }
-
     }
 }
