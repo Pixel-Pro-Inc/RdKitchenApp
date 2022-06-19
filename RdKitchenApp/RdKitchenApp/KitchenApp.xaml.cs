@@ -24,7 +24,7 @@ namespace RdKitchenApp
 
         public static KitchenApp Instance { get; set; }
         public KitchenApp()
-        {            
+        {
             InitializeComponent();
             Instance = this;
 

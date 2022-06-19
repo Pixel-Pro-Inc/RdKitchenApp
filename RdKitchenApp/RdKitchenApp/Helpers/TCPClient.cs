@@ -120,7 +120,7 @@ namespace RdKitchenApp.Helpers
                     await Task.Delay(25);
                     timeElapsed += 25;
 
-                    if(timeElapsed > retryInterval)
+                    if (timeElapsed > retryInterval)
                     {
                         timeElapsed = 0;
                         client.Send(requestString);
