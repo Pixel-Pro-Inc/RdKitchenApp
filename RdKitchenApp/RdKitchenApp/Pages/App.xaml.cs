@@ -1,9 +1,13 @@
-﻿using RdKitchenApp.Helpers;
+﻿using RdKitchenApp.Entities;
+using RdKitchenApp.Helpers;
 using SendGrid;
 using SendGrid.Helpers.Mail;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Threading;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
@@ -12,6 +16,7 @@ namespace RdKitchenApp
 {
     public partial class App : Application
     {
+        private readonly HttpClient client = new HttpClient();
         public App()
         {
             InitializeComponent();
@@ -24,32 +29,34 @@ namespace RdKitchenApp
 
         private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            SendEmail(e);
+            SendRequest(e);
         }
 
-        async void SendEmail(UnhandledExceptionEventArgs e)
+        async void SendRequest(UnhandledExceptionEventArgs e)
         {
-            var apiKey = "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";
-
-            var client = new SendGridClient(apiKey);
-
-            string userCode = "Rodizio Express Error Logger";
-
-            var recipients = new List<string>() { "pixelprocompanyco@gmail.com",
-                "yewotheu123456789@gmail.com","apexmachine2@gmail.com"};
-
-            string _subject = "Kitchen Terminal Error " + System.DateTime.Now.ToString();
-
-            foreach (var reciepient in recipients)
+            using (var requestMessage =
+            new HttpRequestMessage(HttpMethod.Post, "https://app.rodizioexpress.com/api/errorlog/logerror"))
             {
-                var from = new EmailAddress("corecommunications2022@gmail.com", userCode);
-                var subject = _subject;
-                var to = new EmailAddress(reciepient);
-                var plainTextContent = _subject;
-                var htmlContent = System.DateTime.Now.ToString() + "_" + e.ExceptionObject.ToString();
-                var msg = MailHelper.CreateSingleEmail(from, to, subject, plainTextContent, htmlContent);
+                //Setting the header of the request to Basic Authorization is required
+                //Use of our MerchantAPIKey from Stanbic as the auth token
 
-                await client.SendEmailAsync(msg).ConfigureAwait(false);
+                //We have to set the body of the request to be the realmName
+                //As well as setting the content-type of this body which is JSON value prescribed from NGenius Documentation
+                var content = JsonContent.Create(new ErrorLog()
+                {
+                    Exception = e.ExceptionObject.ToString(),
+                    TimeOfException = DateTime.Now,
+                    OriginBranchId = (new SerializedObjectManager().RetrieveData("BranchId")).ToString(),
+                    OriginDevice = "POS Terminal"
+                },
+                new MediaTypeHeaderValue("application/json")
+                );
+
+                //Here we set the content of the request message with the object we just created for the realmName
+                requestMessage.Content = content;
+
+                //We send an asynchronous POST request
+                await client.SendAsync(requestMessage);
             }
         }
 
