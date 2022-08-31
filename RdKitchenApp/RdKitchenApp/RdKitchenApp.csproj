@@ -16,6 +16,7 @@
     <PackageReference Include="Rg.Plugins.Popup" Version="2.1.0" />
     <PackageReference Include="SendGrid" Version="9.28.0" />
     <PackageReference Include="SuperSimpleTcp" Version="2.6.0.5" />
+    <PackageReference Include="System.Net.Http.Json" Version="6.0.0" />
     <PackageReference Include="System.Text.Json" Version="6.0.2" />
     <PackageReference Include="Xam.Plugin.LatestVersion" Version="2.1.0" />
     <PackageReference Include="Xamarin.Forms" Version="5.0.0.2012" />
