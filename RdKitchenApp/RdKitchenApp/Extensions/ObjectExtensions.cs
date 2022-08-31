@@ -67,7 +67,7 @@ namespace RdKitchenApp.Extensions
             {
                 var obj = Encoding.UTF8.GetString(data);
 
-                var _object = await JsonConvert.DeserializeObjectAsync<T>(obj);
+                var _object = JsonConvert.DeserializeObject<T>(obj);
                 return _object;
             }
             catch
