@@ -33,5 +33,9 @@ namespace RdKitchenApp.Entities
         public string MeatTemperature { get; set; }
         public List<string> Sauces { get; set; } = new List<string>();
         public string SubCategory { get; set; }
+        //To allow customers to use multiple payment methods 
+        public bool SplitPayment { get; set; } = false;
+        public List<string> paymentMethods { get; set; } = new List<string>();
+        public List<string> payments { get; set; } = new List<string>();
     }
 }
