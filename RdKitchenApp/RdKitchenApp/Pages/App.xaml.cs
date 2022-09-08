@@ -47,7 +47,7 @@ namespace RdKitchenApp
                     Exception = e.ExceptionObject.ToString(),
                     TimeOfException = DateTime.Now,
                     OriginBranchId = (new SerializedObjectManager().RetrieveData("BranchId")).ToString(),
-                    OriginDevice = "POS Terminal"
+                    OriginDevice = "Kitchen Terminal"
                 },
                 new MediaTypeHeaderValue("application/json")
                 );
