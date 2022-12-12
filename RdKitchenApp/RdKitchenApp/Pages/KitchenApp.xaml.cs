@@ -312,8 +312,9 @@ foreach (var order in orderViewer.Children)
 
             try
             {
+                string branchId = (new SerializedObjectManager().RetrieveData("BranchId")).ToString();
                 if (!string.IsNullOrEmpty(phoneNumber))
-                    await client.PostAsync("https://rodizioexpress.com/api/sms/send/complete/" + phoneNumber + "/" + orderNumber, null);
+                    await client.PostAsync($"https://rodizioexpress.com/api/sms/send/complete?phoneNumber={phoneNumber}&orderNumber={orderNumber}&branchId={branchId}", null);
             }
             catch
             {
