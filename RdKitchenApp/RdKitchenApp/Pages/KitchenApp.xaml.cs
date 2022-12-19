@@ -264,7 +264,7 @@ foreach (var order in orderViewer.Children)
         async Task UpdateDatabase(OrderItem order)
         {
             string branchId = (new SerializedObjectManager().RetrieveData("BranchId")).ToString();
-            string fullPath = "Order/" + branchId + "/" + order.OrderNumber + "/" + order.Id.ToString();
+            string fullPath = "Order/" + branchId + "/" + order.OrderNumber + "/" + order.Index.ToString();
 
             await DataContext.Instance.Update(fullPath, order);
         }
