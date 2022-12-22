@@ -26,9 +26,9 @@ namespace RdKitchenApp.Helpers
 
             try
             {
-                client.ConnectWithRetries(400);
+                client.ConnectWithRetries(5000);
             }
-            catch
+            catch(Exception ex)
             {
                 return false;
             }
@@ -42,7 +42,7 @@ namespace RdKitchenApp.Helpers
 
         public async static Task CreateClient()
         {
-            string ip = await LocalIP.GetServerIP();
+            string ip = reconnectingPopup == null? await LocalIP.GetServerIP(serverConnectPage) : await LocalIP.GetServerIP(reconnectingPopup);
 
             if (ip == "" && reconnectingPopup == null)
             {

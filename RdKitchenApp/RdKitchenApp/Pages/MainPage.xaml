@@ -19,6 +19,15 @@
                    Keyboard="Numeric"/>
         </StackLayout>
 
+        <Label Text="Enter your the ip address of the server computer." FontSize="Title" Padding="30,10,30,10"/>
+
+        <StackLayout Margin="50,0,0,0" Orientation="Horizontal">
+            <Entry Placeholder="192.168.0.0"
+                   WidthRequest="200"
+                   x:Name="ipAddress"
+                   FontSize="Large"/>
+        </StackLayout>
+
         <Button Text="Done" VerticalOptions="EndAndExpand"
                 TextColor="White"
                 BackgroundColor="DeepSkyBlue"
