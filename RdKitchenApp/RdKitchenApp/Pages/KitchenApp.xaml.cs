@@ -278,6 +278,7 @@ foreach (var order in orderViewer.Children)
             //I postulate that this is due to some unexpected behaviour with our current network technology(TCP)
             List<string> orderNumbers = new List<string>();
             var _orders = await DataContext.Instance.GetOrders();
+
             foreach (var item in _orders)
             {
                 //if the order has not already been added to the list add it
@@ -389,6 +390,20 @@ foreach (var order in orderViewer.Children)
             button.Clicked += View_Clicked;
 
             stackLayout1.Children.Add(label);
+
+            if (order[0].DeliveryOrder)
+            {
+                Image image = new Image()
+                {
+                    Source = "moped.png",
+                    VerticalOptions = LayoutOptions.Center,
+                    HorizontalOptions = LayoutOptions.EndAndExpand,
+                    WidthRequest = 80,
+                };
+
+                stackLayout1.Children.Add(image);
+            }
+                
             stackLayout1.Children.Add(button);
 
             StackLayout stackLayout2 = new StackLayout()

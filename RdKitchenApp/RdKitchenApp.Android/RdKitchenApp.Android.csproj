@@ -133,5 +133,8 @@
   <ItemGroup>
     <AndroidResource Include="Resources\Raw\notification.wav" />
   </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\moped.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
 </Project>
