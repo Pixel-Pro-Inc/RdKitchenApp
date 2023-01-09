@@ -77,6 +77,10 @@ namespace RdKitchenApp
                 return;
 
             //SendSMS
+            //Don't send sms for delivery order
+            if (_orders[Index][Index1].DeliveryOrder)
+                return;
+
             string orderNumber = _orders[Index][Index1].OrderNumber.Substring(_orders[Index][Index1].OrderNumber.IndexOf('_') + 1, 4);
             SendSMS(_orders[Index][Index1].PhoneNumber, orderNumber);
         }
@@ -786,6 +790,8 @@ foreach (var order in orderViewer.Children)
             {
                 _orders[Index][Index1].Chefs.Add(LocalStorage.Chef.FullName());
             }
+
+            _orders[Index][Index1].OrderCompletionTime = DateTime.UtcNow;
 
             Logic(Index, Index1);
         }
