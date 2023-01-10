@@ -134,7 +134,12 @@ namespace RdKitchenApp
                 if (!skip)
                 {
                     // Adds the order to the screen by giving the parameters of the order, and the index of the order
-                    orderViewer.Children.Add(GetFrame(orders[i], i));
+                    var order = orders[i];
+
+                    //Exclude services like delivery from kitchen prep menu 
+                    order = order.Where(oItem => oItem.Category.ToLower() != "services").ToList();
+
+                    orderViewer.Children.Add(GetFrame(order, i));
                 }
 
             }
