@@ -56,6 +56,13 @@ namespace RdKitchenApp.Entities
         /// This property shows whether an order was placed for delivery or not
         /// </summary>
         public bool DeliveryOrder { get; set; } = false;
+        /// <summary>
+        /// Stores the full name of the delivery person assigned to this order.
+        /// Decided to use a gender neutral term to promote inclusion
+        /// and remove gender bias to professions cause contrary to
+        /// popular belief I'm not a mysoginist Abel.
+        /// </summary>
+        public string AssignedDeliveryPerson { get; set; }
         #endregion
 
         #region Monetary
